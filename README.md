@@ -164,6 +164,16 @@ enum {
 
 ### 2.2. Message
 
+When the user want to send out a message, the client needs TWO steps before sending it:
+
+1. encrypt the **Instant Message** to **Secure Message**;
+2. sign the **Secure Message** to **Certified Message**.
+
+Similarly, when the client received a message, it needs TWO steps to extract the content:
+
+1. verify the **Certified Message** to **Secure Message**;
+2. decrypt the **Secure Message** to **Instant Message**.
+
 #### Instant Message
 
 ````
@@ -192,8 +202,8 @@ content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
  *  Algorithm:
  *      json = json(content);
  *      PW   = random();
- *      data = base64(encrpyt(json, PW));        // Symmetric
- *      key  = base64(encrypt(PW, receiver.PK)); // Asymmetric
+ *      data = encrpyt(json, PW);        // Symmetric
+ *      key  = encrypt(PW, receiver.PK); // Asymmetric
  */
 {
     //-------- head (envelope) --------

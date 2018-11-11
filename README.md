@@ -1,5 +1,4 @@
-# DIMP
-Decentralized Instant Messaging Protocol
+# Decentralized Instant Messaging Protocol (DIMP)
 
 ## 0. Abstract
 This document introduces a new protocol designed for instant messaging and an architecture for developing decentralized IM applications. The software provides accounts(user identity recognition) and communications(instant message) between accounts safely by end-to-end encryption.

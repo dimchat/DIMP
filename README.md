@@ -23,6 +23,19 @@ The 'Meta' consists of 4 fields:
 | key         | Public Key                    |
 | fingerprint | Signature to generate address |
 
+```
+/* example: hulk */
+{
+    version     : 0x01,
+    seed        : "hulk",
+    key         : {
+        algorithm : "RSA",
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBUyaQPTvXgTfYC7bSAIhC3efc\nQT7HEX9PzJXQs9XeuxY4iBBBnrUPkJhOvwHrnAErBnM6tm9I45htcTeVOsi/qRbs\nXpQ6u7JuBayxgVp2vU0xUWDKLTlE9VT3F/OgT1xGuXnMO5TJnt/HjlbASToGUxBa\nrMWCrjQJX2UitMaU+wIDAQAB\n-----END PUBLIC KEY-----"
+    },
+    fingerprint : "SdxF0IU8Kq9sfD/x46uRC4W8VJ4WmVF8j0Je6ZMIURLoFju/SFEtSC41ibU7R6cgINfUpZ4QCfVpo0+rHwlXBNeyZS5vqf1+fvMuISucRWGjmFmusTAqtqN0RCDvhdkeaxuQyMJKAGlzkcm5CXeqWyijDOQOZyf2pGJlfs18e2c="
+}
+```
+
 THe 'fingerprint' field was calculated by your private key and 'seed':
 
 ````
@@ -38,30 +51,32 @@ The 'ID' is used to identify an entity. It consists of 3 fields:
 | address     | Unique Identification         |
 | terminal    | Login point, it's optional.   |
 
-And the most common format is 'Name@Address'.
+The ID format is ```name@address[/terminal]```.
+
+```
+/* examples */
+ID1 = "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN"; // immortal hulk
+ID2 = "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi"; // monkey king
+```
 
 #### Name
 The 'Name' field is an entity name (username, or just a random string for group).
 
-You can use any 'C' type variable naming string here.
-
-```
-name = "moky";
-```
+You can use any 'C' type variable naming string, e.g.: ```name = "moky";```
 
 #### Address
 The 'Address' field was created by the 'Meta' info and the network ID:
 
 ````
+// Network ID
 enum {
     MKMNetwork_Main  = 0x08, // (Person)
     MKMNetwork_Group = 0x10, // (Multi-Persons)
 };
 
-// address algorithm
-function HASH(fingerprint, network) {
-    CT      = fingerprint;
-    hash    = ripemd160(sha256(CT));
+// Address algorithm
+function BUILD(fingerprint, network) {
+    hash    = ripemd160(sha256(fingerprint));
     code    = sha256(sha256(network+hash)).prefix(4); // check code
     address = base58(network+hash+code);
 }
@@ -77,7 +92,7 @@ network = MKMNetwork_Main;
 CT      = meta.fingerprint;
 PK      = meta.key;
 name    = meta.seed;
-address = HASH(CT, network);
+address = BUILD(CT, network);
 
 if (ID.name == name && ID.address == address && verify(name, CT, PK)) {
     correct = true;
@@ -94,6 +109,10 @@ An entity can be an account or a group. It has an **ID**, a **name**, and a **nu
 An account will have a **public key** too,
 and a group will have **founder**, **owner** and **members**.
 
+```
+user = new Account(ID, PK);
+```
+
 ## 2. Message
 
 ### 2.0. Envelope
@@ -102,7 +121,7 @@ and a group will have **founder**, **owner** and **members**.
 {
     sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
     receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541945151
+    time     : 1541953306
 }
 ```
 
@@ -111,9 +130,9 @@ and a group will have **founder**, **owner** and **members**.
 ````
 {
     type     : 0x01,       // message type
-    sn       : 2704590558, // serial number (ID)
+    sn       : 3125856764, // serial number (message ID in conversation)
     
-    text     : "Hey girl!"
+    text     : "Hey guy!"
 }
 ````
 
@@ -151,17 +170,19 @@ enum {
     //-------- head (envelope) --------
     sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
     receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541945151,
+    time     : 1541953306,
     
     //-------- body (content) ---------
     content  : {
         type : 0x01,       // message type
-        sn   : 2704590558, // serial number (ID)
-        text : "Hey man!"
+        sn   : 3125856764, // serial number (ID)
+        text : "Hey guy!"
     }
     
 }
 ````
+
+content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
 
 #### Secure Message
 
@@ -177,11 +198,11 @@ enum {
     //-------- head (envelope) --------
     sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
     receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541945151,
+    time     : 1541953306,
     
     //-------- body (content) ---------
-    data     : "7UUPs5+5vT6UzXJVbsjEbgVrxQMCyi5rpGBVhyrjbfkB1MFrGof7c7NFk5lH0C0JHdaTg1Bdrnk/i/ee9kVnsjZFkTdSgct5wcqRj0sSQ7I=",
-    key      : "ZDZRHCpJ0YC/HGQJNuYd8tGqqmzL6CjbFgafW73Fj8ZBcMyaMeDOVZjTXTXMP7iWzLVg1X2bX+FrfKOFztWJwmbqDbpxZVWzJgSc0qgMusu6fLUMRJMiIsASHp6ithu++8AjWDwHgcsM7sQekbA+YFjuFVO9T07AR5N1W5GTMQg="
+    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
+    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE="
 }
 ```
 
@@ -197,12 +218,12 @@ enum {
     //-------- head (envelope) --------
     sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
     receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541945151,
+    time     : 1541953306,
     
     //-------- body (content) ---------
-    data     : "7UUPs5+5vT6UzXJVbsjEbgVrxQMCyi5rpGBVhyrjbfkB1MFrGof7c7NFk5lH0C0JHdaTg1Bdrnk/i/ee9kVnsjZFkTdSgct5wcqRj0sSQ7I=",
-    key      : "ZDZRHCpJ0YC/HGQJNuYd8tGqqmzL6CjbFgafW73Fj8ZBcMyaMeDOVZjTXTXMP7iWzLVg1X2bX+FrfKOFztWJwmbqDbpxZVWzJgSc0qgMusu6fLUMRJMiIsASHp6ithu++8AjWDwHgcsM7sQekbA+YFjuFVO9T07AR5N1W5GTMQg=",
-    signature: "Vy9S+6+KgpczWsbzU97217XFoPIJtvHZb5mcShwx12IUnbU3I0voDMbt4O0HtATxQbUsK4pXxR63eGT8kH/9FwWVrNE5kgVXYHgAyan2cNOHJM+GRjNY+ZUIgDrvyBH3zRSEP/JcEJFO70Jp5ERY7LAo/BQPA5Upt3ZshF3SrzY="
+    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
+    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE=",
+    signature: "m8ZHX10apLYSprdGVWx5OVzT15fdMV9NSqODZx7OHUc1lgaH6yGIw7mD5H3oxNqqBdhQlVxdU/69yRxemdSttH42vjWt36WW1UGNae5Gi7fHy/pGBZgQbf1WnpPX6HXwN2g7v5kvFLnnncCtPMIUFRj2AJMj4kkn0waIldwKYOI="
 }
 ```
 

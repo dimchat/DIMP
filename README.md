@@ -223,7 +223,8 @@ content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
 /**
  *  Algorithm:
  *      ...
- *      signature = sign(data, sender.SK)
+ *      digest    = sha256(sha256(data));
+ *      signature = sign(digest, sender.SK);
  */
 {
     //-------- head (envelope) --------

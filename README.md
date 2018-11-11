@@ -1,8 +1,10 @@
 # DIMP
 Decentralized Instant Messaging Protocol
 
-## 0. Summary
-This protocol is designed for instant messaging. It includes just TWO parts:
+## 0. Abstract
+This document introduces a new protocol designed for instant messaging and an architecture for developing decentralized IM applications. The software provides accounts(user identity recognition) and communications(instant message) between accounts safely by end-to-end encryption.
+
+It includes just TWO extremely simple parts:
 
 1. Account
 2. Message
@@ -22,7 +24,7 @@ The 'Meta' consists of 4 fields:
 | key         | Public Key                    |
 | fingerprint | Signature to generate address |
 
-THe 'fingerprint' field was calculate by your private key and 'seed':
+THe 'fingerprint' field was calculated by your private key and 'seed':
 
 ````
 fingerprint = sign(seed, SK);
@@ -51,10 +53,12 @@ name = "moky";
 #### Address
 The 'Address' field was created by the 'Meta' info and the network ID:
 
-1. MKMNetwork_Main (a person)
-2. MKMNetwork_Polylogue (a group)
-
 ````
+enum {
+    MKMNetwork_Main  = 0x08, // (Person)
+    MKMNetwork_Group = 0x10, // (Multi-Persons)
+};
+
 // address algorithm
 function HASH(fingerprint, network) {
     CT      = fingerprint;
@@ -82,6 +86,14 @@ if (ID.name == name && ID.address == address && verify(name, CT, PK)) {
     correct = false;
 }
 ```
+
+### 1.3. Entity (Account/Group)
+'Entity' is the sender/receiver in the network communication.
+
+An entity can be an account or a group. It has an **ID**, a **name**, and a **number** for searching.
+
+An account will have a **public key** too,
+and a group will have **founder**, **owner** and **members**.
 
 ## 2. Message
 
@@ -128,7 +140,7 @@ enum {
     
     // top-secret message forward by proxy
     DIMMessageType_Forward = 0xFF
-}
+};
 ````
 
 ### 2.2. Message
@@ -146,7 +158,7 @@ enum {
     content  : {
         type : 0x01,       // message type
         sn   : 2704590558, // serial number (ID)
-        text : "Hey girl!"
+        text : "Hey man!"
     }
     
 }
@@ -197,4 +209,4 @@ enum {
 
 
 ---
-Written by [Albert Moky](http://moky.github.com/) @2018
+Written by [Albert Moky](http://moky.github.com/) Sun Nov 11 23:18:08 CST 2018

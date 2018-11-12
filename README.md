@@ -8,6 +8,11 @@ It includes just TWO extremely simple parts:
 1. User Identify
 2. Messaging
 
+### White papers
+
+- [English](TechnicalWhitePaper.md)
+- [Chinese](zh-CN/TechnicalWhitePaper.md)
+
 ## 1. User Identify
 
 ### 1.0. Meta

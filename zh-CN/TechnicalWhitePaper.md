@@ -67,20 +67,143 @@ ID 的地址生成算法我参考了 BitCoin 的地址生成算法，并做了�
 对于“群租”（Group）等包含关系网络的信息，我们可以采用类似于区块链的共识机制，通过签名+投票的形式实现关系维护和演变。
 
 ### 消息加密与校验
-DIMP 制定了统一的消息格式与加密/校验机制。每一条信息在发到网络中之前都必须事先进行加密和签名，从而确保任何中间节点不能窃听或篡改其中的内容。具体地，信息的发送需要额外的两个步骤：
+DIMP 制定了统一的消息格式与加密/校验机制。每一条信息在发到网络中之前都必须事先进行加密和签名，从而确保任何中间节点不能窃听或篡改其中的内容。
+
+## 3. 账号
+DIMP 账号算法是 BitCoin 地址算法的升级版，加入了 **name** 和 **search number** 的概念。
+
+DIMP 的账号（ID）主要包含 name 和 address 两部分，另外的 terminal 为扩展字段，为多终端登录扩展预留。其中 name 为用户指定的字符串，命名规则约定如下：
+
+### Name
+
+1. 长度大于 1，且小于 20 字节；
+2. 应由英文字母（区分大小写）、数字0-9、下横线“_”、横线“-”、小数点“.”等组成，不包括空格以及其他特殊字符；
+3. 不能包含保留字符“@”与“/”。
+
+其中第1条和第3条是由算法本身决定的，第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字，不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供。
+
+### Address
+
+DIMP 的账号地址由 Meta 算法生成，其中 Meta 信息包含以下 4 个字段：
+
+1. version - 指定 Meta 算法版本，当前为 1；
+2. seed - 用于生成指纹的种子，即用户指定的账号名 **Name**；
+3. key - 用户的公钥信息；
+4. fingerprint - 指纹信息，由用户私钥对种子 seed 的签名信息进行 base64 编码而得。
+
+生成算法如下：
+
+```
+// 1. 用用户私钥 SK 对种子 seed 进行签名生成指纹信息
+seed        = name;
+fingerprint = sign(seed, SK);
+
+// 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹哈希 hash
+// 3. 将 Network ID 与指纹哈希 hash 拼接后再双哈希（sha256 + sha256）
+//    然后取其结果前 4 个字节作为校验码
+// 4. 将 Network ID、指纹哈希 hash、校验码 check_code 三者拼接后
+//    再 base58 编码即得到账号地址
+hash        = ripemd160(sha256(fingerprint));
+check_code  = sha256(sha256(network + hash)).prefix(4);
+address     = base58(network + hash + check_code);
+```
+
+校验算法如下：
+
+```
+function isMatch(ID, meta) {
+    // 1. 首先检查 Meta 信息中的 seed、key、fingerprint 与 ID.name 是否对应
+    if (meta.seed != ID.name) {
+        return false;
+    }
+    if (verify(meta.seed, meta.fingerprint, meta.key)) {
+        return false;
+    }
+    
+    // 2. 再由 Meta 算法生成其对应的地址，检查是否与 ID.address 相同
+    network    = ID.address.network;
+    hash       = ripemd160(sha256(meta.fingerprint));
+    check_code = sha256(sha256(network + hash)).prefix(4);
+    address    = base58(network + hash + check_code);
+    if (address != ID.address) {
+        return false;
+    }
+    
+    // 3. 以上全部通过，则表示匹配成功，可以接受 meta 中的 key 作为该账号的公钥
+    ID.publicKey = meta.key;
+    return true;
+}
+```
+
+## 4. 消息
+当一个用户需要发送信息时，客户端需要先执行以下两步操作，再将计算结果发送到 DIM 网络中：
 
 1. 用接收方的公钥对消息体进行加密（为提高效率，可以先使用对称密码 PW 对消息体进行加密，然后用接收方公钥对 PW 进行加密）得到密文；
 2. 用发送方的私钥对密文进行签名（先求取密文的摘要，再对摘要进行签名）。
 
-类似地，信息的接收也需要两个对应的步骤：
+对应地，信息的接收也需要两个对应的步骤：
 
 1. 用发送方的公钥对密文和签名进行校验（先求得密文的摘要，再对摘要进行校验）；
 2. 用接收方的私钥对密文进行解密（先解密得到对称密码 PW，再用 PW 对密文进行解密还原消息体）。
 
 通过以上算法，既能确保信息不被任何中间节点窃取，也能防止第三方篡改，从而实现安全可靠的去中心化通讯。
 
-## 3. 账号
-## 4. 消息
+### 消息头（Envelope）
+每一个消息都包含3个字段作为消息头：
+
+1. sender - 发送方 ID
+2. receiver - 接收方 ID
+3. time - 发送时间
+
+### 消息内容（Content）
+每一份消息内容都包含2个公共字段以区分不同的消息：
+
+1. type - 消息类型（text、file、image、audio、video、webpage、command 等）
+2. sn - 消息序列号（由发送方客户端随机生成的数字，以唯一标识具体某个信息）
+
+### 原始信息（Instant Message）
+发送方发出的信息（打包处理前）、接收方收到后（解包处理后）的信息，格式如下：
+
+1. sender - 发送方 ID
+2. receiver - 接收方 ID
+3. time - 发送时间
+4. content - 消息内容（明文）
+
+### 加密信息（Secure Message）
+客户端发出信息前，先对原始信息进行加密，得到格式如下（content 字段替换成了 data）：
+
+1. sender - 发送方 ID
+2. receiver - 接收方 ID
+3. time - 发送时间
+4. data - 加密数据（用一个随机密码对 content 进行对称加密）
+5. key - 对称密码信息（用接收方公钥加密，因此只有接收方私钥能够解密）
+
+加密算法如下：
+
+```
+string = json(content);            // 1. 先将 content 序列化为一个字符串
+PW     = random();                 // 2. 生成随机密码（对称加密密钥）
+data   = encrypt(string, PW);      // 3. 对序列化字符串进行加密并替换
+key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
+```
+
+### 签名信息（Certified Message）
+对原始信息加密后，再用发送方私钥进行签名，得到格式如下：
+
+1. sender - 发送方 ID
+2. receiver - 接收方 ID
+3. time - 发送时间
+4. data - 加密数据
+5. key - 对称密码信息
+6. signature - 签名信息
+
+签名算法如下：
+
+```
+digest    = sha256(sha256(data));    // 1. 先计算 data 的摘要信息
+signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
+```
+
 ## 5. 扩展
 ## 6. 结论
 

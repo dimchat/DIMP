@@ -59,9 +59,42 @@ DIMP 引入了3类信息的共识机制：身份确认算法、关系维护机�
 ### 身份确认
 首先，用户账号 ID 通过一个我称之为“元”（Meta）的数据结构来生成，该生成算法确保了用户的 ID 与其非对称密钥对（PK+SK）之间的关联关系。
 
+ID 是一个格式为 ```name@address[/terminal]``` 的字符串，主要包含 name 和 address 两个字段，另外一个可选字段 terminal 用于标明该 ID 当前登录设备，以区分多终端登录的情形：
+
+1. name - 账号名，非唯一；
+2. address - 由 Meta 算法计算得到的地址，在当前算力下可保证全网唯一性；
+3. terminal - 登录点名称（可选项），仅用于表示同一个 ID 在不同地方登录。
+
+Meta 信息是一个数据结构，包含以下 4 个字段：
+
+1. version - 指定 Meta 算法版本，当前为 1；
+2. seed - 用于生成指纹的种子，即用户指定的账号名 **Name**；
+3. key - 用户的公钥信息；
+4. fingerprint - 指纹信息，由用户私钥对种子 seed 的签名信息进行 base64 编码而得。
+
+```
+/* Meta 信息实例，对应 ID 实例为 "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN" */
+{
+    // 元算法版本号
+    version     : 0x01,
+    // 信息种子，用于生成指纹信息，同时用作 ID.name
+    seed        : "hulk",
+    // 用户公钥 PK
+    key         : {
+        // 公钥算法名称
+        algorithm : "RSA",
+        // 公钥数据
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBUyaQPTvXgTfYC7bSAIhC3efc\nQT7HEX9PzJXQs9XeuxY4iBBBnrUPkJhOvwHrnAErBnM6tm9I45htcTeVOsi/qRbs\nXpQ6u7JuBayxgVp2vU0xUWDKLTlE9VT3F/OgT1xGuXnMO5TJnt/HjlbASToGUxBa\nrMWCrjQJX2UitMaU+wIDAQAB\n-----END PUBLIC KEY-----"
+        // 其他公钥参数
+    },
+    // 指纹信息，用于生成 ID.address
+    fingerprint : "SdxF0IU8Kq9sfD/x46uRC4W8VJ4WmVF8j0Je6ZMIURLoFju/SFEtSC41ibU7R6cgINfUpZ4QCfVpo0+rHwlXBNeyZS5vqf1+fvMuISucRWGjmFmusTAqtqN0RCDvhdkeaxuQyMJKAGlzkcm5CXeqWyijDOQOZyf2pGJlfs18e2c="
+}
+```
+
 当一个节点或客户端从其他节点获得一个宣称与某 ID 对应的 Meta 信息时，可以根据共识算法自行校验。如果校验通过，则确认 Meta 信息中包含的公钥（PK）信息合法，并加入本地的数据库中。由于 Meta 算法的确定性，任何一个节点或客户端都可以判断 ID & PK 的对应关系是否合法，无需第三方机构证明。
 
-ID 的地址生成算法我参考了 BitCoin 的地址生成算法，并做了一点微小的升级，使其能包含一个人类可读的 **name** 信息，同时还增加了一个更有利于搜索账号（而不是只能复制粘贴地址）的 **number** 属性。相信以上两个扩展将会令其作为 IM 账号更加友好并更容易推广。
+ID 的地址生成算法参考了 BitCoin 的地址生成算法，并做了一点微小的升级，使其能包含一个人类可读的 **name** 信息，同时还增加了一个更有利于搜索账号（而不是只能复制粘贴地址）的 **number** 属性。相信以上两个扩展将会令其作为 IM 账号更加友好并更容易推广。
 
 ### 关系维护
 对于“群组”（Group）等包含关系网络的信息，我们可以采用类似于区块链的共识机制，通过签名+投票的形式实现关系维护和演变。
@@ -84,14 +117,7 @@ DIMP 的账号（ID）主要包含 name 和 address 两部分，另外的 termin
 
 ### Address
 
-DIMP 的账号地址由 Meta 算法生成，其中 Meta 信息包含以下 4 个字段：
-
-1. version - 指定 Meta 算法版本，当前为 1；
-2. seed - 用于生成指纹的种子，即用户指定的账号名 **Name**；
-3. key - 用户的公钥信息；
-4. fingerprint - 指纹信息，由用户私钥对种子 seed 的签名信息进行 base64 编码而得。
-
-生成算法如下：
+DIMP 的账号地址由 Meta 算法生成，算法如下：
 
 ```
 // 1. 用用户私钥 SK 对种子 seed 进行签名生成指纹信息
@@ -237,7 +263,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x01,
+    type : 0x01, // DIMMessageType_Text
     sn   : 1234,
     
     text : "Hey guy!"
@@ -248,7 +274,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x10
+    type : 0x10, // DIMMessageType_File
     sn   : 1234,
     
     URL      : "http://...", // encrypt & upload to CDN
@@ -260,7 +286,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x12,
+    type : 0x12, // DIMMessageType_Image
     sn   : 1234,
     
     URL      : "http://...",    // encrypt & upload to CDN
@@ -273,7 +299,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x14,
+    type : 0x14, // DIMMessageType_Audio
     sn   : 1234,
     
     URL  : "http://...", // encrypt & upload to CDN
@@ -285,7 +311,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x16,
+    type : 0x16, // DIMMessageType_Video
     sn   : 1234,
     
     URL      : "http://...",   // encrypt & upload to CDN
@@ -297,7 +323,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x20
+    type : 0x20, // DIMMessageType_Page
     sn   : 1234,
     
     URL   : "http://...",   // Web Page URL
@@ -311,7 +337,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x37,
+    type : 0x37, // DIMMessageType_Quote
     sn   : 5678,
     
     quote : 1234, // referenced serial number of previous message
@@ -323,7 +349,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0x88,
+    type : 0x88, // DIMMessageType_Command
     sn   : 1234,
     
     command : "...", // command name
@@ -342,7 +368,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 ```
 {
-    type : 0xFF,
+    type : 0xFF, // DIMMessageType_Forward
     sn   : 5678,
     
     forward : { // top-secret message

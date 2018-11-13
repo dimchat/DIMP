@@ -67,27 +67,23 @@ ID 是一个格式为 ```name@address[/terminal]``` 的字符串，主要包含 
 
 Meta 信息是一个数据结构，包含以下 4 个字段：
 
-1. version - 指定 Meta 算法版本，当前为 1；
-2. seed - 用于生成指纹的种子，即用户指定的账号名 **Name**；
-3. key - 用户的公钥信息；
-4. fingerprint - 指纹信息，由用户私钥对种子 seed 的签名信息进行 base64 编码而得。
+1. version - “元”算法版本号，当前为 1；
+2. seed - 信息种子，用于生成指纹信息，同时用作 ID.name；
+3. key - 用户的公钥（PK）信息；
+4. fingerprint - 指纹信息，由用户私钥（SK）对种子信息签名而得，用于生成 ID.address。
 
 ```
 /* Meta 信息实例，对应 ID 实例为 "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN" */
 {
-    // 元算法版本号
     version     : 0x01,
-    // 信息种子，用于生成指纹信息，同时用作 ID.name
     seed        : "hulk",
-    // 用户公钥 PK
     key         : {
         // 公钥算法名称
         algorithm : "RSA",
-        // 公钥数据
+        // 公钥数据（支持直接导入 PEM 等格式文件）
         data      : "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBUyaQPTvXgTfYC7bSAIhC3efc\nQT7HEX9PzJXQs9XeuxY4iBBBnrUPkJhOvwHrnAErBnM6tm9I45htcTeVOsi/qRbs\nXpQ6u7JuBayxgVp2vU0xUWDKLTlE9VT3F/OgT1xGuXnMO5TJnt/HjlbASToGUxBa\nrMWCrjQJX2UitMaU+wIDAQAB\n-----END PUBLIC KEY-----"
         // 其他公钥参数
     },
-    // 指纹信息，用于生成 ID.address
     fingerprint : "SdxF0IU8Kq9sfD/x46uRC4W8VJ4WmVF8j0Je6ZMIURLoFju/SFEtSC41ibU7R6cgINfUpZ4QCfVpo0+rHwlXBNeyZS5vqf1+fvMuISucRWGjmFmusTAqtqN0RCDvhdkeaxuQyMJKAGlzkcm5CXeqWyijDOQOZyf2pGJlfs18e2c="
 }
 ```
@@ -100,14 +96,16 @@ ID 的地址生成算法参考了 BitCoin 的地址生成算法，并做了一�
 对于“群组”（Group）等包含关系网络的信息，我们可以采用类似于区块链的共识机制，通过签名+投票的形式实现关系维护和演变。
 
 ### 消息加密与校验
-DIMP 制定了统一的消息格式与加密/校验机制。每一条信息在发到网络中之前都必须事先进行加密和签名，从而确保任何中间节点不能窃听或篡改其中的内容。
+DIMP 制定了统一的消息格式与加解密/签名校验机制。每一条信息在发到网络中之前都必须事先进行加密和签名，从而确保不会被任何中间节点窃听或篡改。
 
-## 3. 账号
+## 3. ID（账号）
 DIMP 账号算法是 BitCoin 地址算法的升级版，加入了 **name** 和 **search number** 的概念。
 
 DIMP 的账号（ID）主要包含 name 和 address 两部分，另外的 terminal 为扩展字段，为多终端登录扩展预留。其中 name 为用户指定的字符串，命名规则约定如下：
 
-### Name
+### Name（账号名）
+
+命名规则：
 
 1. 长度大于 1，且小于 20 字节；
 2. 应由英文字母（区分大小写）、数字0-9、下横线“_”、横线“-”、小数点“.”等组成，不包括空格以及其他特殊字符；
@@ -115,7 +113,7 @@ DIMP 的账号（ID）主要包含 name 和 address 两部分，另外的 termin
 
 其中第1条和第3条是由算法本身决定的，第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字，不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供。
 
-### Address
+### Address（账号地址）
 
 DIMP 的账号地址由 Meta 算法生成，算法如下：
 
@@ -166,17 +164,17 @@ function isMatch(ID, meta) {
 }
 ```
 
-### Search Number
-由于 Address 字段对人类记忆不友好，所以通常需要用直接复制 ID 字符串的方式来添加好友，无法像手机号码、QQ号码那样口头传播，因此我引入了**账户号码**的概念。
+### Search Number（检索号）
+由于 Address 字段对人类记忆力极不友好，所以通常需要用直接复制 ID 字符串或者扫码的方式来添加好友，无法像手机号码、QQ号码那样口头传播，所以我在此特别引入了**账户检索号**的概念。
 
-在此约定所有开发者在实现时采用 ID.address 的**校验码**（4字节）作为该账号的 **Search Number** 以方便用户口头传播（其形如 **123-456-7890**，类似于电话号码，容易记忆，但不保证绝对唯一性）。
+我们约定所有开发者在编程实现时采用 ID.address 的**校验码**（4字节）作为该账号的 **Search Number** 以方便用户口头传播（其形如 **123-456-7890**，类似于电话号码，容易记忆，但不保证绝对唯一性）。
 
-该字段的样本空间大小为 **4,294,967,296**，因此当网络中的用户数达到了数千万级以上之后，每个账号的 Search Number 相同的概率将会超过 1%（尤其是“靓号”）。当匹配到多个用户 ID 时，需要用户通过 ID.name 等其他信息分辨真正的好友 ID。
+该字段的样本空间大小为 **2<sup>32</sup> (4,294,967,296)**，当网络中的注册账户数超过1亿之后，平均每个账号的检索号存在相同数字的概率将会超过 2.3%（尤其是“靓号”，因为可能会有人在生成账号时通过反复碰撞的方式去获取一个吉祥数字）。所以当匹配到多个用户 ID 时，需要用户通过 ID.name 等其他信息分辨出真正的好友 ID。
 
 ## 4. 群（Group）
 超过2人参与的聊天谓之“群”（Group）。根据人数多少和存续时间长短可以采用不同的实现方式。
 
-确认群指令的有效性，采用 POP（权限证明）机制，即根据共识约定每个角色的权限，然后每一项操作必须由该角色成员签名方为有效。
+确认群指令的有效性，采用 **POP（Proof of Permission，权限证明）**机制，即依据共识相互约定每个角色的权限，然后每一项操作必须由拥有此操作权限的角色成员签名方为有效。
 
 ### 4.1. Polylogue - 多人会话（临时讨论组）
 对于少数人参与的群（例如少于 100 人），可以采用“临时讨论组”方式实现。
@@ -227,9 +225,9 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 ### 4.2. Chatroom - 聊天室（固定群/大规模群聊天）
 对于参与人数较多的群（例如 100 人以上），由于需要添加**管理员**角色（Administrator）以协助管理，并且需要允许转让**群主**（Owner）身份，相对比较复杂，所以我这里建议使用**区块链**技术来记录**群历史**信息。
 
-具体实现方式是每个群一条**链**，打包区块的权限采用 **POP**（Proof Of Permission）机制，即通过共识定义群角色的权限，然后由角色成员签名打包数据。
+具体实现方式是每个群一条**区块链**，打包区块的权限认定采用 **POP 机制**，即通过共识定义群角色的权限，然后由该角色成员对数据进行签名并打包写入区块。
 
-*（DIM 项目第一阶段由于使用人数较少，暂时无需实现这部分功能，建议群聊天都采用 Polylogue 方式）。*
+~~（DIM 项目第一阶段由于使用人数较少，暂时无需实现这部分功能，建议所有群聊天都采用 **Polylogue** 方式）。~~
 
 ## 5. 消息
 当一个用户需要发送信息时，客户端需要先执行以下两步操作，再将计算结果发送到 DIM 网络中：
@@ -257,7 +255,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 1. type - 消息类型（text、file、image、audio、video、webpage、command 等）
 2. sn - 消息序列号（由发送方客户端随机生成的数字，以唯一标识具体某个信息）
 
-下面列举几个不同类型的消息格式：
+下面列举几个常用类型的消息格式规范：
 
 #### 0x01 - 文本消息
 
@@ -358,7 +356,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 ```
 
 #### 0xFF - 转发消息
-此类消息通常用于 DIM 网络环境极度不可信、消息发送者希望隐藏消息路径的使用场景。其中```forward```字段包含的是需要转发的实际消息包（已加密+已签名）。实施过程如下：
+此类格式的消息常用于消息发送者希望隐藏消息路径的使用场景。其中```forward```字段包含的是需要转发的实际消息包（已加密+已签名）。实施过程如下：
 
 1. 发送方先创建一个包含实际消息内容的**待发送信息包**（加密+签名）；
 2. 发送方将整个实际消息包进行二次打包，生成一个发给提供转发服务的 Station 的消息（receiver 为 **Station ID**，消息类型为 **DIMMessageType_Forward**）；
@@ -376,23 +374,28 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
         receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
         time     : 1542075610,
         
-        data      : "BASE64_ENCODE", // secret message content
-        key       : "BASE64_ENCODE", // encrypt(PW, receiver.PK)
-        signature : "BASE64_ENCODE"  // sign(hash(data), sender.SK)
+        data      : "BASE64_ENCODE", // top-secret content
+        key       : "BASE64_ENCODE",
+        signature : "BASE64_ENCODE"
     }
 }
 ```
 
-### 原始信息（Instant Message）
-发送方发出的信息（打包处理前）、接收方收到后（解包处理后）的信息，格式如下：
+### 信息包数据结构
+以下是 DIMP 定义的 3 级信息格式，其中 **Instant Message** 为收发双方客户端保存的明文信息格式；**Secure Message** 是打包/解包过程中产生的中间格式；只有 **Certified Message** 会发到网络上进行传送：
+
+* **原始信息包（Instant Message）**
+
+发送方发出的信息（打包处理前）、接收方收到后的信息（解包处理后），格式如下：
 
 1. sender - 发送方 ID
 2. receiver - 接收方 ID
 3. time - 发送时间
 4. content - 消息内容（明文）
 
-### 加密信息（Secure Message）
-客户端发出信息前，先对原始信息进行加密，得到格式如下（content 字段替换成了 data）：
+* **加密信息包（Secure Message）**
+
+客户端发出信息前，先对原始信息进行加密，所得到的中间信息包（content 字段替换成了 data），格式如下：
 
 1. sender - 发送方 ID
 2. receiver - 接收方 ID
@@ -409,8 +412,9 @@ data   = encrypt(string, PW);      // 3. 对序列化字符串进行加密并替
 key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 ```
 
-### 签名信息（Certified Message）
-对原始信息加密后，再用发送方私钥进行签名，得到格式如下：
+* **认证信息包（Certified Message）**
+
+用发送方私钥对中间信息包（Secure Message）进行签名，最终得到的网络信息包，格式如下：
 
 1. sender - 发送方 ID
 2. receiver - 接收方 ID

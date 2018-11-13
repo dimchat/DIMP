@@ -2,7 +2,7 @@
 
 草案：**2018年11月11日** (@moky)
 
-**摘要:** 本文档引入一种新的为即时通讯而设计的协议，以及一个为开发分布式即时通讯应用而设计的技术架构。该软件提供了一个账号系统（用户身份认证）以及在各账号之间通过端对端加密实现的安全通讯服务。
+**摘要:** 本文档引入一种新的为分布式即时通讯而设计的协议，以及一个为开发分布式即时通讯应用而设计的技术架构。该软件提供了一个账号系统（用户身份认证）以及在各账号之间通过端对端加密实现的安全通讯服务。
 
 Copyright &copy; 2018 Albert Moky
 
@@ -64,7 +64,7 @@ DIMP 引入了3类信息的共识机制：身份确认算法、关系维护机�
 ID 的地址生成算法我参考了 BitCoin 的地址生成算法，并做了一点微小的升级，使其能包含一个人类可读的 **name** 信息，同时还增加了一个更有利于搜索账号（而不是只能复制粘贴地址）的 **number** 属性。相信以上两个扩展将会令其作为 IM 账号更加友好并更容易推广。
 
 ### 关系维护
-对于“群租”（Group）等包含关系网络的信息，我们可以采用类似于区块链的共识机制，通过签名+投票的形式实现关系维护和演变。
+对于“群组”（Group）等包含关系网络的信息，我们可以采用类似于区块链的共识机制，通过签名+投票的形式实现关系维护和演变。
 
 ### 消息加密与校验
 DIMP 制定了统一的消息格式与加密/校验机制。每一条信息在发到网络中之前都必须事先进行加密和签名，从而确保任何中间节点不能窃听或篡改其中的内容。
@@ -95,17 +95,25 @@ DIMP 的账号地址由 Meta 算法生成，其中 Meta 信息包含以下 4 个
 
 ```
 // 1. 用用户私钥 SK 对种子 seed 进行签名生成指纹信息
-seed        = name;
-fingerprint = sign(seed, SK);
+meta.version     = 0x01;
+meta.seed        = "moky";
+meta.key         = PK;
+meta.fingerprint = sign(meta.seed, SK);
 
 // 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹哈希 hash
 // 3. 将 Network ID 与指纹哈希 hash 拼接后再双哈希（sha256 + sha256）
 //    然后取其结果前 4 个字节作为校验码
 // 4. 将 Network ID、指纹哈希 hash、校验码 check_code 三者拼接后
 //    再 base58 编码即得到账号地址
-hash        = ripemd160(sha256(fingerprint));
-check_code  = sha256(sha256(network + hash)).prefix(4);
-address     = base58(network + hash + check_code);
+function btcBuildAddress(fingerprint, network) {
+    hash        = ripemd160(sha256(fingerprint));
+    check_code  = sha256(sha256(network + hash)).prefix(4);
+    address     = base58(network + hash + check_code);
+}
+
+// 将 name 与 address 组合，即得到 ID （字符串格式：“name@address”）
+ID.name    = meta.seed;
+ID.address = btcBuildAddress(meta.fingerprint, network);
 ```
 
 校验算法如下：
@@ -121,10 +129,7 @@ function isMatch(ID, meta) {
     }
     
     // 2. 再由 Meta 算法生成其对应的地址，检查是否与 ID.address 相同
-    network    = ID.address.network;
-    hash       = ripemd160(sha256(meta.fingerprint));
-    check_code = sha256(sha256(network + hash)).prefix(4);
-    address    = base58(network + hash + check_code);
+    address = btcBuildAddress(meta.fingerprint, ID.address.network);
     if (address != ID.address) {
         return false;
     }
@@ -135,7 +140,65 @@ function isMatch(ID, meta) {
 }
 ```
 
-## 4. 消息
+## 4. 群（Group）
+超过2人参与的聊天谓之“群”（Group）。根据人数多少和存续时间长短可以采用不同的实现方式。
+
+确认群指令的有效性，采用 POP（权限证明）机制，即根据共识约定每个角色的权限，然后每一项操作必须由该角色成员签名方为有效。
+
+### 4.1. Polylogue - 多人会话（临时讨论组）
+对于少数人参与的群（例如少于 100 人），可以采用“临时讨论组”方式实现。
+
+Polylogue 是一个由客户端维护的**虚拟群**，任何一个群成员邀请其他用户时，遵循向当前所有成员群发 **invite** 指令的规则；当某位成员希望退出该群，则群发 **quit** 指令；仅群创建者（群主）可以驱逐成员，通过群发 **expel** 指令实现。
+
+每个用户需要用自己的私钥对指令进行**签名**，每个客户端接收到一条群指令后，需验证其身份与签名，验证通过后，如实记录在本地数据库中。
+
+#### 建群操作
+首先通过 ID 生成算法得到群 ID：
+
+```
+// 生成元信息
+meta.version     = 0x01;
+meta.seed        = "Polylogue-1234567890"; // 随机字符串
+meta.key         = founder.PK;
+meta.fingerprint = sign(meta.seed, founder.SK);
+
+// 生成 ID
+ID.name    = meta.seed;
+ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
+```
+然后将群 ID 发给初始成员。每位成员收到后，在本地保存为一个**临时会话**记录。
+后续所有通讯都必须在 message.content.group 中夹带群 ID，以便接收方知道这是一个群消息。
+
+#### 添加群成员
+生成 **invite** 指令：
+
+```
+{
+    type    : 0x88,      // DIMMessageType_Command
+    sn      : 794594362,
+    group   : "Polylogue-1234567890@7jA5JmnrsM46hcynsKdcns47d4fYwpbbn7",
+    
+    command : "invite",
+    member  : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN"
+}
+```
+
+然后加密、签名，得到 Certified Message（参照“消息”章节）。再发送给全部已有成员即可。
+
+#### 退群
+如上，```command```字段为```quit```。
+
+#### 驱逐成员
+如上，```command```字段为```expel```，且仅限群主操作。
+
+### 4.2. Chatroom - 聊天室（固定群/大规模群聊天）
+对于参与人数较多的群（例如 100 人以上），由于需要添加**管理员**角色（Administrator）以协助管理，并且需要允许转让**群主**（Owner）身份，相对比较复杂，所以我这里建议使用**区块链**技术来记录**群历史**信息。
+
+具体实现方式是每个群一条**链**，打包区块的权限采用 **POP**（Proof Of Permission）机制，即通过共识定义群角色的权限，然后由角色成员签名打包数据。
+
+*（DIM 项目第一阶段由于使用人数较少，暂时无需实现这部分功能，建议群聊天都采用 Polylogue 方式）。*
+
+## 5. 消息
 当一个用户需要发送信息时，客户端需要先执行以下两步操作，再将计算结果发送到 DIM 网络中：
 
 1. 用接收方的公钥对消息体进行加密（为提高效率，可以先使用对称密码 PW 对消息体进行加密，然后用接收方公钥对 PW 进行加密）得到密文；
@@ -204,6 +267,6 @@ digest    = sha256(sha256(data));    // 1. 先计算 data 的摘要信息
 signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 ```
 
-## 5. 扩展
-## 6. 结论
+## 6. 扩展
+## 7. 结论
 祝帝企鹅20周岁生日快乐！🎂

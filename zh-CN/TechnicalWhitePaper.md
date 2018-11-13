@@ -140,6 +140,13 @@ function isMatch(ID, meta) {
 }
 ```
 
+### Search Number
+由于 Address 字段对人类记忆不友好，所以通常需要用直接复制 ID 字符串的方式来添加好友，无法像手机号码、QQ号码那样口头传播，因此我引入了**账户号码**的概念。
+
+在此约定所有开发者在实现时采用 ID.address 的**校验码**（4字节）作为该账号的 **Search Number** 以方便用户口头传播（其形如 **123-456-7890**，类似于电话号码，容易记忆，但不保证绝对唯一性）。
+
+该字段的样本空间大小为 **4,294,967,296**，因此当网络中的用户数达到了数千万级以上之后，每个账号的 Search Number 相同的概率将会超过 1%（尤其是“靓号”）。当匹配到多个用户 ID 时，需要用户通过 ID.name 等其他信息分辨真正的好友 ID。
+
 ## 4. 群（Group）
 超过2人参与的聊天谓之“群”（Group）。根据人数多少和存续时间长短可以采用不同的实现方式。
 
@@ -223,6 +230,132 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 
 1. type - 消息类型（text、file、image、audio、video、webpage、command 等）
 2. sn - 消息序列号（由发送方客户端随机生成的数字，以唯一标识具体某个信息）
+
+下面列举几个不同类型的消息格式：
+
+#### 0x01 - 文本消息
+
+```
+{
+    type : 0x01,
+    sn   : 1234,
+    
+    text : "Hey guy!"
+}
+```
+
+#### 0x10 - 文件消息
+
+```
+{
+    type : 0x10
+    sn   : 1234,
+    
+    URL      : "http://...", // encrypt & upload to CDN
+    filename : "dir.zip"
+}
+```
+
+#### 0x12 - 图片消息
+
+```
+{
+    type : 0x12,
+    sn   : 1234,
+    
+    URL      : "http://...",    // encrypt & upload to CDN
+    snapshot : "BASE64_ENCODE", // base64(smallImage)
+    filename : "photo.png"
+}
+```
+
+#### 0x14 - 语音消息
+
+```
+{
+    type : 0x14,
+    sn   : 1234,
+    
+    URL  : "http://...", // encrypt & upload to CDN
+    text : "ASR_TEXT"    // Automatic Speech Recognition
+}
+```
+
+#### 0x16 - 视频消息
+
+```
+{
+    type : 0x16,
+    sn   : 1234,
+    
+    URL      : "http://...",   // encrypt & upload to CDN
+    snapshot : "BASE64_ENCODE" // base64(smallImage)
+}
+```
+
+#### 0x20 - 网页消息
+
+```
+{
+    type : 0x20
+    sn   : 1234,
+    
+    URL   : "http://...",   // Web Page URL
+    icon  : "BASE64_ENCODE" // base64(icon)
+    title : "...",
+    desc  : "..."
+}
+```
+
+#### 0x37 - 引用回复
+
+```
+{
+    type : 0x37,
+    sn   : 5678,
+    
+    quote : 1234, // referenced serial number of previous message
+    text  : "I like it!"
+}
+```
+
+#### 0x88 - 系统命令
+
+```
+{
+    type : 0x88,
+    sn   : 1234,
+    
+    command : "...", // command name
+    params  : ...    // extra parameters
+}
+```
+
+#### 0xFF - 转发消息
+此类消息通常用于 DIM 网络环境极度不可信、消息发送者希望隐藏消息路径的使用场景。其中```forward```字段包含的是需要转发的实际消息包（已加密+已签名）。实施过程如下：
+
+1. 发送方先创建一个包含实际消息内容的**待发送信息包**（加密+签名）；
+2. 发送方将整个实际消息包进行二次打包，生成一个发给提供转发服务的 Station 的消息（receiver 为 **Station ID**，消息类型为 **DIMMessageType_Forward**）；
+2. 该 Station 收到后，先验证并用自己的私钥解密，判断消息类型是否为 DIMMessageType_Forward；
+3. 如果是，则读取```forward```的信息头，获取**实际接收方 ID**，并将```forward```重新打包，生成一个由 Station 发给实际接收方的消息包并发送到 DIM 网络中（sender 为 Station ID，receiver 为实际接收方 ID，消息类型为 DIMMessageType_Forward）；
+5. 实际 receiver 收到数据包后，解开并判断消息类型，如果是 **DIMMessageType_Forward** 则对```forward``内容**递归执行解包操作**，直到获得最终的真实消息内容。
+
+```
+{
+    type : 0xFF,
+    sn   : 5678,
+    
+    forward : { // top-secret message
+        sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
+        receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
+        time     : 1542075610,
+        
+        data      : "BASE64_ENCODE", // secret message content
+        key       : "BASE64_ENCODE", // encrypt(PW, receiver.PK)
+        signature : "BASE64_ENCODE"  // sign(hash(data), sender.SK)
+    }
+}
+```
 
 ### 原始信息（Instant Message）
 发送方发出的信息（打包处理前）、接收方收到后（解包处理后）的信息，格式如下：

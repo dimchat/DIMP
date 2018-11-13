@@ -42,6 +42,8 @@ Copyright &copy; 2018 Albert Moky
         - [加密信息包（Secure Message）](#secure-message)
         - [认证信息包（Certified Message）](#certified-message)
 - [扩展](#extensions)
+    - [白名单](#white-list)
+    - [黑名单](#black-list)
 - [结论](#conclusion)
 
 ## 0. <span id="background">背景<span>
@@ -471,5 +473,19 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 ```
 
 ## 6. <span id="extensions">扩展</span>
+
+### <span id="white-list">白名单</span>
+
+由 Station 提供的增值服务。
+
+客户端成功与某 Station 建立连接后，可以选择是否将自己的通讯录列表作为**白名单**提交给该 Station，如果这样做，则可享受其提供的**自动过滤垃圾信息服务**：在此期间，Station 将自动丢弃所有发送者 ID 不在白名单中的消息（群消息除外）。
+
+### <span id="black-list">黑名单</span>
+
+遇到骚扰账号时，可以将其 ID 加入到本地的黑名单列表，则所有发送者 ID 在黑名单中的消息将不会被显示（客户端自动屏蔽）；
+
+同时，当客户端成功与可以提供**自动屏蔽骚扰信息服务**的 Station 建立连接后，可以选择是否将本地的黑名单提交给该 Station，如果这样做，则 Station 将会自动丢弃所有发送者 ID 在黑名单中的消息（群消息除外）。
+
+
 ## 7. <span id="conclusion">结论</span>
 祝帝企鹅20周岁生日快乐！🎂

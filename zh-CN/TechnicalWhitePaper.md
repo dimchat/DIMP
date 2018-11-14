@@ -42,6 +42,8 @@ Copyright &copy; 2018 Albert Moky
         - [加密信息包（Secure Message）](#secure-message)
         - [认证信息包（Certified Message）](#certified-message)
 - [扩展](#extensions)
+    - [握手（登录验证）](#handshake)
+    - [信息包确认签收](#receipt)
     - [白名单](#white-list)
     - [黑名单](#black-list)
     - [蚂蚁搬运工](#ant-porter)
@@ -475,6 +477,104 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 ## 6. <span id="extensions">扩展</span>
 
+### <span id="handshake">握手（登录验证）</span>
+
+为了确认用户身份，以便正确的投递信息包（虽然投递到错误地址也不会造成信息泄密，但是可能会导致真正的接收方丢失信息），Station 应该在收到客户端的连接请求时确认对方身份是否合法。因此基于 DIMP 扩展出此协议。
+
+第一步，Client 向 Station 发起连接，并连接成功之后，向服务器端发送第一个 **Say Hello** 信息包：
+
+```
+/* 1. 构建系统命令信息包 Instant Message */
+{
+    sender   : "USER_ID",
+    receiver : "STATION_ID",
+    time     : 1542156395,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 1234,
+        command : "handshake",
+        message : "Hello world!"
+    }
+}
+/**
+ *  2. 然后加密+签名：
+ *    PW        = random();
+ *    data      = encrypt(json(content), PW);
+ *    key       = encrypt(PW, station.PK);
+ *    signature = sign(hash(data), user.SK);
+ *  生成 Certified Message 再发送到 Station
+ */
+```
+
+第二步，如果 Station 收到 Client 的 Say Hello 信息包，或者当 Station 检测到该用户 ID 的收件箱里有新消息，需要向 Client 推送消息之前（如尚未确认身份），必须先发送**身份验证请求包**：
+
+```
+/* 1. 构建系统命令信息包 Instant Message */
+{
+    sender   : "STATION_ID",
+    receiver : "USER_ID",
+    time     : 1542156754,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 2345,
+        command : "handshake",
+        message : "DIM?",
+        session : "RANDOM_STRING" // 由 Station 生成的随机字符串
+    }
+}
+/**
+ *  2. 然后加密+签名：
+ *    PW        = random();
+ *    data      = encrypt(json(content), PW);
+ *    key       = encrypt(PW, user.PK);
+ *    signature = sign(hash(data), station.SK);
+ *  生成 Certified Message 再发送到 Client
+ */
+```
+
+第三步，Client 收到 Station 发送的身份验证请求包后，必须回复一个**身份确认响应包**：
+
+```
+{
+    sender   : "USER_ID",
+    receiver : "STATION_ID",
+    time     : 1542157677,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 3456,
+        command : "handshake",
+        message : "Hello world!",
+        session : "RANDOM_STRING" // 由 Station 生成的随机字符串
+    }
+}
+/* 同样需要加密+签名 */
+```
+
+第四步，如果 Station 验证后发现 session 信息不匹配，则拒绝服务并断开链接，否则回复**身份确认信息包**并继续后续通讯：
+
+```
+{
+    sender   : "STATION_ID",
+    receiver : "USER_ID",
+    time     : 1542157935,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 4567,
+        command : "handshake",
+        message : "DIM!"
+    }
+}
+/* 同样需要加密+签名 */
+```
+
+### <span id="receipt">信息包确认签收</span>
+
+为追踪用户信息包到达情况，可扩展**信息签收**子协议。
+
 ### <span id="white-list">白名单</span>
 
 由 Station 提供的增值服务。
@@ -491,7 +591,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 由 Service Provider 提供的增值服务。
 
-当用户需要访问**网络距离**十分遥远的资源时，SP 可以优化其服务器群以提供这样的服务：将大量用户重复访问的大文件（如视频）搬到本地缓存，以使其用户可以就近访问，极大地提高访问速度；同时由于避免了大量重复下载（同一份文件只需要搬运一次），也大大减少了资源浪费。
+当用户需要访问**网络距离**十分遥远的资源时，SP 可以优化其服务器群以提供这样的服务：将大量用户重复访问的大文件（如视频）搬到本地缓存，以使其用户可以就近访问，极大地提高访问速度；同时由于避免了大量重复下载（同一份文件只需要搬运一次），也大大减少了跨网带宽资源的浪费，降低网络拥堵几率。
 
 特别地，如果是用户 A 向用户 B 发送一个大文件，常规方式是用户 A 先将文件上传到就近的服务器，再将其 URL 放到消息体中发送给 B；用户 B 收到消息后，通过 URL 从用户 A 附近的服务器下载文件。而优化的方案则是 SP 判断到用户 B 距离该资源十分遥远时，其所在 SP 可以预先将该文件搬运到本地，如此则用户 B 登录后便可以从就近的服务器快速下载该文件。
 

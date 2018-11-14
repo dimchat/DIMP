@@ -493,7 +493,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
         type    : 0x88, // DIMMessageType_Command
         sn      : 1234,
         command : "handshake",
-        message : "Hello world!"
+        message : "Hello world!" // Hi!
     }
 }
 /**
@@ -519,7 +519,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
         type    : 0x88, // DIMMessageType_Command
         sn      : 2345,
         command : "handshake",
-        message : "DIM?",
+        message : "DIM?", // What's up?
         session : "RANDOM_STRING" // 由 Station 生成的随机字符串
     }
 }
@@ -545,7 +545,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
         type    : 0x88, // DIMMessageType_Command
         sn      : 3456,
         command : "handshake",
-        message : "Hello world!",
+        message : "Hello world!", // It's me!
         session : "RANDOM_STRING" // 由 Station 生成的随机字符串
     }
 }
@@ -564,7 +564,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
         type    : 0x88, // DIMMessageType_Command
         sn      : 4567,
         command : "handshake",
-        message : "DIM!"
+        message : "DIM!" // OK!
     }
 }
 /* 同样需要加密+签名 */

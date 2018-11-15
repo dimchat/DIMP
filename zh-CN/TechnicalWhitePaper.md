@@ -52,7 +52,7 @@ Copyright &copy; 2018 Albert Moky
 ## 0. <span id="background">背景<span>
 
 即时通讯（IM）是目前 Internet 上最为流行的通讯方式，它允许网络上的两个人或多人使用网络实时的传递文字消息、文件、语音与视频交流。
-从用户使用场景角度，目前市场上的IM工具可划分为**企业级IM工具**（如钉钉、企业微信、RTX 等）和**个人IM工具**（如 WeChat、QQ、Facebook、Whatsapp、Telegram 等）两大类。
+从用户使用场景角度，目前市场上的IM工具可划分为**企业级IM工具**（如钉钉、企业微信、RTX 等）和**个人IM工具**（如 Facebook、Whatsapp、WeChat、QQ、Telegram 等）两大类。
 
 而当前所有最流行的 IM 工具其平台架构设计都是中心化的，每个工具背后都是一套自有的账号认证系统以及消息转发系统。这将造成至少以下3个难以解决或避免的关键性问题：
 

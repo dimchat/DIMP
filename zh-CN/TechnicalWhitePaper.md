@@ -42,8 +42,9 @@ Copyright &copy; 2018 Albert Moky
         - [加密信息包（Secure Message）](#secure-message)
         - [认证信息包（Certified Message）](#certified-message)
 - [扩展](#extensions)
-    - [握手（登录验证）](#handshake)
-    - [信息包确认签收](#receipt)
+    - [握手协议（登录验证）](#handshake)
+    - [登陆点信息广播协议](#broadcast)
+    - [信息包确认签收协议](#receipt)
     - [白名单](#white-list)
     - [黑名单](#black-list)
     - [蚂蚁搬运工](#ant-porter)
@@ -475,7 +476,7 @@ digest    = sha256(sha256(data));    // 1. 先计算 data 的摘要信息
 signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 ```
 
-（最终发送当网络中的只有 Certified Message 信息包，该信息包内容第三方无法窃听、无法篡改，在当前世界算力水平下可确保足够安全。）
+最终发送到 DIM 网络中的只有 Certified Message 信息包，DIM 网络仅负责快速正确投递信息包，无法解密其内容、也无法篡改冒充，在当前世界算力水平下可确保足够安全。以下是一个测试实例：
 
 ```javascript
 /**
@@ -483,10 +484,10 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
  *  
  *  Algorithm:
  *      // 1. 加密，并将明文的 content 字段替换为加密的 data
- *      json = json(content);
- *      PW   = random();
- *      data = encrpyt(json, PW);        // Symmetric
- *      key  = encrypt(PW, receiver.PK); // Asymmetric
+ *      string = json(content);
+ *      PW     = random();
+ *      data   = encrpyt(string, PW);      // Symmetric
+ *      key    = encrypt(PW, receiver.PK); // Asymmetric
  *      // 2. 签名
  *      digest    = sha256(sha256(data));
  *      signature = sign(digest, sender.SK);
@@ -506,7 +507,9 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 ## 6. <span id="extensions">扩展</span>
 
-### <span id="handshake">握手（登录验证）</span>
+以下子协议非 DIMP 核心，但在实际应用中仍然十分重要，所以放在 DIMP Extensions 里。
+
+### 6.1. <span id="handshake">握手协议（登录验证）</span>
 
 为了确认用户身份，以便正确的投递信息包（虽然投递到错误地址也不会造成信息泄密，但是可能会导致真正的接收方丢失信息），Station 应该在收到客户端的连接请求时确认对方身份是否合法。因此基于 DIMP 扩展出此协议。
 
@@ -600,23 +603,68 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 /* 同样需要加密+签名 */
 ```
 
-### <span id="receipt">信息包确认签收</span>
+### 6.2. <span id="broadcast">登录点信息广播协议</span>
+
+特别地，随着用户量增加，DIM 网络中的 Station 也会越来越多，为了更快捷高效地转发信息，需要增加一个子协议以协助 DIM 网络计算最短传输路径（即**路由算法**）。因此这里提出一个扩展建议：
+
+1. 在上面的握手协议基础之上，额外扩展一个包含当前连接的 Station 信息的数据结构（含签名），给到 Station；
+2. Station 在收到此信息包并验证+去重后，更新本地数据库并向全网广播此数据结构；
+3. 每一个 Station 在收到此数据结构时，将自身信息加入到该结构所附带的传播路径（traces）并转发给其余已建立连接的 Station。
+
+登录信息包数据格式如下：
+
+```javascript
+{
+    sender   : "USER_ID"
+    receiver : "STATION_ID"
+    time     : 1542157677,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 3456,
+        command : "handshake",
+        message : "Hello world!", // It's me!
+        session : "RANDOM_STRING", // 由 Station 生成的随机字符串
+        
+        // 登录信息（被全网广播的数据结构）
+        broadcast : {
+            account   : "USER_ID"
+            login     : {
+                ID       : "STATION_ID",
+                host     : "211.66.6.1",
+                port     : 9394,
+                time     : 1542157677, // 登录时间
+                terminal : "DEVICE_ID" // 登录设备（可选）
+            },
+            // 1. 先将 login 替换为 JsON 字符串
+            // 2. 再对该字符串 hash 签名
+            signature : "BASE64_ENCODE", // sign(hash(json), user.SK);
+            
+            traces    : [
+                { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
+            ]
+        }
+    }
+}
+```
+
+### 6.3. <span id="receipt">信息包确认签收协议</span>
 
 为追踪用户信息包到达情况，可扩展**信息签收**子协议。
 
-### <span id="white-list">白名单</span>
+### 6.4. <span id="white-list">白名单</span>
 
 由 Station 提供的增值服务。
 
 客户端成功与某 Station 建立连接后，可以选择是否将自己的通讯录列表作为**白名单**提交给该 Station，如果这样做，则可享受其提供的**自动过滤垃圾信息服务**：在此期间，Station 将自动丢弃所有发送者 ID 不在白名单中的消息（群消息除外）。
 
-### <span id="black-list">黑名单</span>
+### 6.5. <span id="black-list">黑名单</span>
 
 遇到骚扰账号时，可以将其 ID 加入到本地的黑名单列表，则所有发送者 ID 在黑名单中的消息将不会被显示（客户端自动屏蔽）；
 
 同时，当客户端成功与可以提供**自动屏蔽骚扰信息服务**的 Station 建立连接后，可以选择是否将本地的黑名单提交给该 Station，如果这样做，则 Station 将会自动丢弃所有发送者 ID 在黑名单中的消息（群消息除外）。
 
-### <span id="ant-porter">蚂蚁搬运工</span>
+### 6.6. <span id="ant-porter">蚂蚁搬运工</span>
 
 由 Service Provider 提供的增值服务。
 

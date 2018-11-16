@@ -60,9 +60,9 @@ Copyright &copy; 2018 Albert Moky
 2. 每个平台需要中心化的数据库来存储用户账号密码等资料，这些中心点很容易成为**黑客攻击**的目标，如果被突破，将会引发大面积的社会性事件；
 3. 用户**完全依赖**于其所在的 IM 平台处理能力，一旦出现中心故障将可能导致无法登录与通讯。
 
-问题1的主要症结在于这种中心化机制**不利于持续创新**，容易形成**寡头垄断市场**。而一旦垄断形成，极有可能会出现行业寡头凭借用户基数优势打压竞争对手的“霸权主义”（**挟用户以令天下**），阻碍行业发展，伤害用户利益；即使有一天寡头丧失创新能力，其用户也会由于迁移成本过高而必须继续忍受其落后的通讯方式与不良服务体验，难以享受其他开发者提供的更优质的产品与服务。
+问题1的主要症结在于这种中心化机制**不利于持续创新**，容易形成**寡头垄断市场**。而一旦垄断形成，极有可能会出现行业寡头凭借用户基数优势打压竞争对手的“霸权主义”（**挟用户以令天下**），阻碍行业发展，最终伤害的是广大用户的利益；即使有一天寡头丧失创新能力，其用户也会由于迁移成本过高而必须继续忍受其落后的通讯方式与不良服务体验，难以享受其他开发者提供的更优质的产品与服务。
 
-其次，由于各家平台账号不能互通，即使寡头尚未完全形成，几家头部企业的用户相互之间也无法直接通讯。从而导致每个用户需要同时安装多个客户端、注册多个账号并频繁切换的不良体验。同时本来应该属于**用户的关系网络资源**却被平台夺取占有（成为平台最有价值的核心资源），用户自己反而**难以迁移**。
+其次，由于各家平台账号不能互通，即使寡头尚未完全形成，几家头部企业的用户相互之间也无法直接通讯。从而导致每个用户需要同时安装多个客户端、注册多个账号并频繁切换的不良体验。同时本来应该属于**用户的关系网络资源**却被平台夺取占有（成为平台最有价值的核心资源），用户自己反而**难以自由迁移**。
 
 更进一步地，由于用户需求的多样性和快速变化等特点，很难在一款 IM 工具上承载所有的用户需求特性（这将导致一款应用过于庞大而无法使用），而同时开发和维护多款 IM 工具显然超出了一家企业的能力范围（无论这家企业多么庞大），而这正是众多具有旺盛创新能力的小团队的优势所在。所以一个有利于创新的市场，必须要有一套彻底开放的机制，以确保这种创新能力不会被巨头绞杀在摇篮里。
 
@@ -116,7 +116,7 @@ Meta 信息是一个数据结构，包含以下 4 个字段：
 3. key - 用户的公钥（PK）信息；
 4. fingerprint - 指纹信息，由用户私钥（SK）对信息种子签名而得，用于生成 ID.address。
 
-```
+```javascript
 /* Meta 信息实例，对应 ID 实例为 "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN" */
 {
     version     : 0x01,
@@ -160,7 +160,7 @@ DIMP 的账号（ID）是一个格式为 ```name@address``` 的字符串，其�
 
 DIMP 的账号地址由 Meta 算法生成，算法如下：
 
-```
+```javascript
 // 1. 用用户私钥 SK 对种子 seed 进行签名生成指纹信息
 meta.version     = 0x01;
 meta.seed        = "moky";
@@ -176,6 +176,7 @@ function btcBuildAddress(fingerprint, network) {
     hash        = ripemd160(sha256(fingerprint));
     check_code  = sha256(sha256(network + hash)).prefix(4);
     address     = base58(network + hash + check_code);
+    return address;
 }
 
 // 将 name 与 address 组合，即得到 ID （字符串格式：“name@address”）
@@ -185,7 +186,7 @@ ID.address = btcBuildAddress(meta.fingerprint, network);
 
 校验算法如下：
 
-```
+```javascript
 function isMatch(ID, meta) {
     // 1. 首先检查 Meta 信息中的 seed、key、fingerprint 与 ID.name 是否对应
     if (meta.seed != ID.name) {
@@ -229,7 +230,7 @@ Polylogue 是一个由客户端维护的**虚拟群**，任何一个群成员邀
 #### 建群操作
 首先通过 ID 生成算法得到群 ID：
 
-```
+```javascript
 // 生成元信息
 meta.version     = 0x01;
 meta.seed        = "Polylogue-1234567890"; // 随机字符串
@@ -246,7 +247,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 #### 添加群成员
 生成 **invite** 指令：
 
-```
+```javascript
 {
     type    : 0x88,      // DIMMessageType_Command
     sn      : 794594362,
@@ -302,7 +303,7 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 - 0x01 - <span id="text-message">**文本消息**</span>
 
-```
+```javascript
 {
     type : 0x01, // DIMMessageType_Text
     sn   : 1234,
@@ -313,24 +314,24 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 - 0x10 - <span id="file-message">**文件消息**</span>
 
-```
+```javascript
 {
     type : 0x10, // DIMMessageType_File
     sn   : 1234,
     
-    URL      : "http://...", // encrypt & upload to CDN
+    URL      : "http://", // encrypt & upload to CDN
     filename : "dir.zip"
 }
 ```
 
 - 0x12 - <span id="image-message">**图片消息**</span>
 
-```
+```javascript
 {
     type : 0x12, // DIMMessageType_Image
     sn   : 1234,
     
-    URL      : "http://...",    // encrypt & upload to CDN
+    URL      : "http://",       // encrypt & upload to CDN
     snapshot : "BASE64_ENCODE", // base64(smallImage)
     filename : "photo.png"
 }
@@ -338,37 +339,37 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 - 0x14 - <span id="audio-message">**语音消息**</span>
 
-```
+```javascript
 {
     type : 0x14, // DIMMessageType_Audio
     sn   : 1234,
     
-    URL  : "http://...", // encrypt & upload to CDN
-    text : "ASR_TEXT"    // Automatic Speech Recognition
+    URL  : "http://", // encrypt & upload to CDN
+    text : "ASR_TEXT" // Automatic Speech Recognition
 }
 ```
 
 - 0x16 - <span id="video-message">**视频消息**</span>
 
-```
+```javascript
 {
     type : 0x16, // DIMMessageType_Video
     sn   : 1234,
     
-    URL      : "http://...",   // encrypt & upload to CDN
+    URL      : "http://",      // encrypt & upload to CDN
     snapshot : "BASE64_ENCODE" // base64(smallImage)
 }
 ```
 
 - 0x20 - <span id="web-page">**网页消息**</span>
 
-```
+```javascript
 {
     type : 0x20, // DIMMessageType_Page
     sn   : 1234,
     
-    URL   : "http://...",   // Web Page URL
-    icon  : "BASE64_ENCODE" // base64(icon)
+    URL   : "http://",       // Web Page URL
+    icon  : "BASE64_ENCODE", // base64(icon)
     title : "...",
     desc  : "..."
 }
@@ -376,7 +377,7 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 - 0x37 - <span id="quote-reply">**引用回复**<span>
 
-```
+```javascript
 {
     type : 0x37, // DIMMessageType_Quote
     sn   : 5678,
@@ -388,7 +389,7 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 - 0x88 - <span id="system-command">**系统命令**</span>
 
-```
+```javascript
 {
     type : 0x88, // DIMMessageType_Command
     sn   : 1234,
@@ -408,7 +409,7 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 3. 如果是，则读取```forward```的信息头，获取**实际接收方 ID**，并将```forward```重新打包，生成一个由 Station 发给实际接收方的消息包并发送到 DIM 网络中（sender 为 Station ID，receiver 为实际接收方 ID，消息类型为 DIMMessageType_Forward）；
 5. 实际 receiver 收到数据包后，解开并判断消息类型，如果是 **DIMMessageType_Forward** 则对```forward``内容**递归执行解包操作**，直到获得最终的真实消息内容。
 
-```
+```javascript
 {
     type : 0xFF, // DIMMessageType_Forward
     sn   : 5678,
@@ -449,7 +450,7 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
 
 加密算法如下：
 
-```
+```javascript
 string = json(content);            // 1. 先将 content 序列化为一个字符串
 PW     = random();                 // 2. 生成随机密码（对称加密密钥）
 data   = encrypt(string, PW);      // 3. 对序列化字符串进行加密并替换
@@ -469,9 +470,38 @@ key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 
 签名算法如下：
 
-```
+```javascript
 digest    = sha256(sha256(data));    // 1. 先计算 data 的摘要信息
 signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
+```
+
+（最终发送当网络中的只有 Certified Message 信息包，该信息包内容第三方无法窃听、无法篡改，在当前世界算力水平下可确保足够安全。）
+
+```javascript
+/**
+ *  网络信息包实例
+ *  
+ *  Algorithm:
+ *      // 1. 加密，并将明文的 content 字段替换为加密的 data
+ *      json = json(content);
+ *      PW   = random();
+ *      data = encrpyt(json, PW);        // Symmetric
+ *      key  = encrypt(PW, receiver.PK); // Asymmetric
+ *      // 2. 签名
+ *      digest    = sha256(sha256(data));
+ *      signature = sign(digest, sender.SK);
+ */
+{
+    //-------- head (envelope) --------
+    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
+    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
+    time     : 1541953306,
+    
+    //-------- body (content) ---------
+    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
+    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE=",
+    signature: "m8ZHX10apLYSprdGVWx5OVzT15fdMV9NSqODZx7OHUc1lgaH6yGIw7mD5H3oxNqqBdhQlVxdU/69yRxemdSttH42vjWt36WW1UGNae5Gi7fHy/pGBZgQbf1WnpPX6HXwN2g7v5kvFLnnncCtPMIUFRj2AJMj4kkn0waIldwKYOI="
+}
 ```
 
 ## 6. <span id="extensions">扩展</span>
@@ -482,7 +512,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 第一步，Client 向 Station 发起连接，并连接成功之后，向服务器端发送第一个 **Say Hello** 信息包：
 
-```
+```javascript
 /* 1. 构建系统命令信息包 Instant Message */
 {
     sender   : "USER_ID",
@@ -508,7 +538,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 第二步，如果 Station 收到 Client 的 Say Hello 信息包，或者当 Station 检测到该用户 ID 的收件箱里有新消息，需要向 Client 推送消息之前（如尚未确认身份），必须先发送**身份验证请求包**：
 
-```
+```javascript
 /* 1. 构建系统命令信息包 Instant Message */
 {
     sender   : "STATION_ID",
@@ -535,7 +565,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 第三步，Client 收到 Station 发送的身份验证请求包后，必须回复一个**身份确认响应包**：
 
-```
+```javascript
 {
     sender   : "USER_ID",
     receiver : "STATION_ID",
@@ -554,7 +584,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
 
 第四步，如果 Station 验证后发现 session 信息不匹配，则拒绝服务并断开链接，否则回复**身份确认信息包**并继续后续通讯：
 
-```
+```javascript
 {
     sender   : "STATION_ID",
     receiver : "USER_ID",

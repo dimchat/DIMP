@@ -151,7 +151,7 @@ DIMP 的账号（ID）是一个格式为 ```name@address``` 的字符串，其�
 
 命名规则：
 
-1. 长度大于 1，且小于 20 字节；
+1. 长度大于 1，且不超过 32 字节；
 2. 应由英文字母（区分大小写）、数字0-9、下横线“_”、横线“-”、小数点“.”等组成，不包括空格以及其他特殊字符；
 3. 不能包含保留字符“@”与“/”。
 
@@ -219,7 +219,7 @@ function isMatch(ID, meta) {
 ## 4. <span id="group"> Group（群组）</span>
 超过2人参与的聊天谓之“群”（Group）。根据人数多少和存续时间长短可以采用不同的实现方式。
 
-确认群指令的有效性，采用 **POP（Proof of Permission，权限证明）**机制，即依据共识相互约定每个角色的权限，然后每一项操作必须由拥有此操作权限的角色成员签名方为有效。
+确认群指令的有效性，采用 **POP（Proof of Permission，权限证明）** 机制，即依据共识相互约定每个角色的权限，然后每一项操作必须由拥有此操作权限的角色成员签名方为有效。
 
 ### 4.1. <span id="polylogue">Polylogue - 多人会话（临时讨论组）</span>
 对于少数人参与的群（例如少于 100 人），可以采用“临时讨论组”方式实现。
@@ -626,21 +626,34 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
         message : "Hello world!", // It's me!
         session : "RANDOM_STRING", // 由 Station 生成的随机字符串
         
-        // 登录信息（被全网广播的数据结构）
+        // 被全网广播的数据结构
         broadcast : {
-            account   : "USER_ID"
-            login     : {
-                ID       : "STATION_ID",
+            /**
+             *  登录信息
+             */
+            login : {
+                // 基站(节点)信息
+                station  : "STATION_ID",
                 host     : "211.66.6.1",
                 port     : 9394,
-                time     : 1542157677, // 登录时间
-                terminal : "DEVICE_ID" // 登录设备（可选）
+                time     : 1542157677,  // 登录时间
+                // 终端(客户端)信息
+                account  : "USER_ID",
+                terminal : "DEVICE_ID", // 终端标识（可选）
+                userAgent: "USER_AGENT" // 其他信息
             },
-            // 1. 先将 login 替换为 JsON 字符串
-            // 2. 再对该字符串 hash 签名
+            
+            /**
+             *  用户签名
+             *    1. 先将 login 转换为 JsON 字符串并替换
+             *    2. 再对该字符串 hash 签名
+             */
             signature : "BASE64_ENCODE", // sign(hash(json), user.SK);
             
-            traces    : [
+            /**
+             *  路由信息
+             */
+            traces : [
                 { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
             ]
         }

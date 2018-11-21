@@ -645,10 +645,10 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
             
             /**
              *  用户签名
-             *    1. 先将 login 转换为 JsON 字符串并替换
-             *    2. 再对该字符串 hash 签名
+             *    1. 先将 login 转换为 JsON 字符串
+             *    2. 再对 login 字符串 hash 签名
              */
-            signature : "BASE64_ENCODE", // sign(hash(json), user.SK);
+            signature : "BASE64_ENCODE", // sign(sha256d(json(login)), user.SK);
             
             /**
              *  路由信息

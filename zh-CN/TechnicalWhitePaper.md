@@ -43,7 +43,7 @@ Copyright &copy; 2018 Albert Moky
         - [认证信息包（Certified Message）](#certified-message)
 - [扩展](#extensions)
     - [握手协议（登录验证）](#handshake)
-    - [登陆点信息广播协议](#broadcast)
+    - [登录点信息广播协议](#broadcast)
     - [信息包确认签收协议](#receipt)
     - [白名单](#white-list)
     - [黑名单](#black-list)
@@ -118,7 +118,7 @@ Meta 信息是一个数据结构，包含以下 4 个字段：
 4. fingerprint - 指纹信息，由用户私钥（SK）对信息种子签名而得，用于生成 ID.address。
 
 ```javascript
-/* Meta 信息实例，对应 ID 实例为 "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN" */
+/* Meta 信息实例，对应 ID 实例为 "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ" */
 {
     version     : 0x01,
     seed        : "hulk",
@@ -126,10 +126,10 @@ Meta 信息是一个数据结构，包含以下 4 个字段：
         // 公钥算法名称
         algorithm : "RSA",
         // 公钥数据（支持直接导入 PEM 等格式文件）
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBUyaQPTvXgTfYC7bSAIhC3efc\nQT7HEX9PzJXQs9XeuxY4iBBBnrUPkJhOvwHrnAErBnM6tm9I45htcTeVOsi/qRbs\nXpQ6u7JuBayxgVp2vU0xUWDKLTlE9VT3F/OgT1xGuXnMO5TJnt/HjlbASToGUxBa\nrMWCrjQJX2UitMaU+wIDAQAB\n-----END PUBLIC KEY-----"
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBAKHnPiSva9pjkTKYqfP1beikQBriPqGUPPAoBYUF5kwk+r3BfKswcWGV\nKGyuS++VYk5SyaiMLrmDMFETf26XE6yWPa+lakTg+/QgQdyE7/pIfbngdfxvWWO7\nTLRr6Q/Am61Otkb12kgmiJmLTDLV5a+6L19f85+g7YKvbL4G0k9BAgMBAAE=\n-----END PUBLIC KEY-----"
         // 其他公钥参数
     },
-    fingerprint : "SdxF0IU8Kq9sfD/x46uRC4W8VJ4WmVF8j0Je6ZMIURLoFju/SFEtSC41ibU7R6cgINfUpZ4QCfVpo0+rHwlXBNeyZS5vqf1+fvMuISucRWGjmFmusTAqtqN0RCDvhdkeaxuQyMJKAGlzkcm5CXeqWyijDOQOZyf2pGJlfs18e2c="
+    fingerprint : "cPeswyjeFKMgw963GcptO4aiwriAHXYImmJH+nxlLvvahPOLOO/Usi8hEGR1NUGg4iDFj9TzwyV7WhJ/X7bHB1/YcU5rouhEDn8XTqhR2hOkbn7UvlF4ASaB21e4ibDKjri4vQY0w8HY32GdxvR5BMMtE+DaaFOZKPHKwGTSNGc="
 }
 ```
 
@@ -157,6 +157,11 @@ DIMP 的账号（ID）是一个格式为 ```name@address``` 的字符串，其�
 
 其中第1条和第3条是由算法本身决定的，第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字，不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供。
 
+```
+// 举例
+name = "Albert.Moky";
+```
+
 ### <span id="address">Address（账号地址）</span>
 
 DIMP 的账号地址由 Meta 算法生成，算法如下：
@@ -174,9 +179,9 @@ meta.fingerprint = sign(meta.seed, SK);
 // 4. 将 Network ID、指纹哈希 hash、校验码 check_code 三者拼接后
 //    再 base58 编码即得到账号地址
 function btcBuildAddress(fingerprint, network) {
-    hash        = ripemd160(sha256(fingerprint));
-    check_code  = sha256(sha256(network + hash)).prefix(4);
-    address     = base58(network + hash + check_code);
+    hash       = ripemd160(sha256(fingerprint));
+    check_code = sha256(sha256(network + hash)).prefix(4);
+    address    = base58(network + hash + check_code);
     return address;
 }
 
@@ -212,9 +217,9 @@ function isMatch(ID, meta) {
 ### <span id="number">Search Number（检索号）</span>
 由于 Address 字段对人类记忆力极不友好，所以通常需要用直接复制 ID 字符串或者扫码的方式来添加好友，无法像手机号码、QQ号码那样口头传播，所以我在此特别引入了**账户检索号**的概念。
 
-我们约定所有开发者在编程实现时采用 ID.address 的**校验码**（4字节）作为该账号的 **Search Number** 以方便口头传播（其形如 **123-456-7890**，类似于电话号码，容易记忆，但不保证绝对唯一性）。
+我们约定所有开发者在编程实现时采用 ID.address 的**校验码**（4字节）作为该账号的 Search Number 以方便口头传播（其形如 **012-345-6789**，类似于电话号码，容易记忆，但不保证绝对唯一性）。
 
-该数值的取值范围最小为 **1**（我们约定0为非法账号），最大为 **2<sup>32</sup>-1 (4,294,967,295)**，当网络中的注册账户数超过1亿之后，平均每个账号的检索号存在相同数字的概率将会超过 2.3%（尤其是“靓号”，因为可能会有人在生成账号时通过反复碰撞的方式去获取一个吉祥数字）。所以当匹配到多个用户 ID 时，需要用户通过 ID.name 等其他信息分辨出真正的好友 ID。
+该数值的取值范围最小为 **1**（我们约定0为非法账号），最大为 **2<sup>32</sup>-1 (4,294,967,295)**，当网络中的注册账户数超过1亿之后，平均每个账号的检索号存在相同数字的概率将会超过 2.3%（尤其是“靓号”，因为可能会有人在生成账号时通过反复碰撞的方式去获取一个吉祥数字）。所以当匹配到多个用户 ID 时，需要用户自己通过 ID.name 等其他信息分辨出真正的好友 ID。
 
 ## 4. <span id="group"> Group（群组）</span>
 超过2人参与的聊天谓之“群”（Group）。根据人数多少和存续时间长短可以采用不同的实现方式。
@@ -255,35 +260,35 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
     group   : "Polylogue-1234567890@7jA5JmnrsM46hcynsKdcns47d4fYwpbbn7",
     
     command : "invite",
-    member  : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN"
+    member  : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"
 }
 ```
 
 然后加密、签名，得到 Certified Message（参照 [消息](#message) 章节）。再发送给全部已有成员即可。
 
 #### 退群
-如上，```command```字段为```quit```。
+如上，**command** 字段为 ```quit```。
 
 #### 驱逐成员
-如上，```command```字段为```expel```，且仅限群主操作。
+如上，**command** 字段为 ```expel```，且仅限群主操作。
 
 ### 4.2. <span id="chatroom">Chatroom - 聊天室（固定群/大规模群聊天）</span>
-对于参与人数较多的群（例如 100 人以上），由于需要添加**管理员**角色（Administrator）以协助管理，并且需要允许转让**群主**（Owner）身份，相对比较复杂，所以我这里建议使用**区块链**技术来记录**群历史**信息。
+对于参与人数较多的群（例如 100 人以上），由于需要添加**管理员(Administrator)**角色以协助管理，并且需要允许转让**群主(Owner)**身份，相对比较复杂，所以我这里建议使用**区块链**技术来记录**群历史**信息。
 
 具体实现方式是每个群一条**区块链**，打包区块的权限认定采用 **POP 机制**，即通过共识定义群角色的权限，然后由该角色成员对数据进行签名并打包写入区块。
 
-_（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部分功能，建议所有群聊天都采用 **Polylogue** 方式~~）。_
+_（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这部分功能，建议所有群聊天都采用 **Polylogue** 方式）。_
 
 ## 5. <span id="message">消息</span>
 当一个用户需要发送信息时，客户端需要先执行以下两步操作，再将计算结果发送到 DIM 网络中：
 
-1. 用接收方的公钥对消息体进行加密（为提高效率，可以先使用对称密码 PW 对消息体进行加密，然后用接收方公钥对 PW 进行加密）得到密文；
-2. 用发送方的私钥对密文进行签名（先求取密文的摘要，再对摘要进行签名）。
+1. 用接收方的公钥对消息体进行**加密**（为提高效率，可以先使用对称密码 PW 对消息体进行加密，然后用接收方公钥对 PW 进行加密）得到密文；
+2. 用发送方的私钥对密文进行**签名**（先求取密文的摘要，再对摘要进行签名）。
 
 对应地，信息的接收也需要两个对应的步骤：
 
-1. 用发送方的公钥对密文和签名进行校验（先求得密文的摘要，再对摘要进行校验）；
-2. 用接收方的私钥对密文进行解密（先解密得到对称密码 PW，再用 PW 对密文进行解密还原消息体）。
+1. 用发送方的公钥对密文和签名进行**校验**（先求得密文的摘要，再对摘要进行校验）；
+2. 用接收方的私钥对密文进行**解密**（先解密得到对称密码 PW，再用 PW 对密文进行解密还原消息体）。
 
 通过以上算法，既能确保信息不被任何中间节点窃取，也能防止第三方篡改，从而实现安全可靠的去中心化通讯。
 
@@ -416,8 +421,8 @@ _（~~DIM 项目第一阶段由于使用人数较少，暂时无需实现这部�
     sn   : 5678,
     
     forward : { // top-secret message
-        sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-        receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
+        sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+        receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
         time     : 1542075610,
         
         data      : "BASE64_ENCODE", // top-secret content
@@ -494,14 +499,14 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541953306,
+    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+    time     : 1542984590,
     
     //-------- body (content) ---------
-    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
-    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE=",
-    signature: "m8ZHX10apLYSprdGVWx5OVzT15fdMV9NSqODZx7OHUc1lgaH6yGIw7mD5H3oxNqqBdhQlVxdU/69yRxemdSttH42vjWt36WW1UGNae5Gi7fHy/pGBZgQbf1WnpPX6HXwN2g7v5kvFLnnncCtPMIUFRj2AJMj4kkn0waIldwKYOI="
+    data      : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
+    key       : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API=",
+    signature : "K+YkHm6XRHmUz1X1XlwhrybkrBCkeo9nBPg3fzFJISxTtepUjaAQuOVpjEkte69dCKIMF+rQZKq1Gi3BBqXAGmvoUCnuFm9zy1f4T3PpCoOvoASca5fbYSSXSls0XV/BHtZJo+0SkMkzrFpWR9941y0XgnvfTYvwUeYqYrcYCw4="
 }
 ```
 

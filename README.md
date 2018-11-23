@@ -35,9 +35,9 @@ The 'Meta' consists of 4 fields:
     seed        : "hulk",
     key         : {
         algorithm : "RSA",
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDBUyaQPTvXgTfYC7bSAIhC3efc\nQT7HEX9PzJXQs9XeuxY4iBBBnrUPkJhOvwHrnAErBnM6tm9I45htcTeVOsi/qRbs\nXpQ6u7JuBayxgVp2vU0xUWDKLTlE9VT3F/OgT1xGuXnMO5TJnt/HjlbASToGUxBa\nrMWCrjQJX2UitMaU+wIDAQAB\n-----END PUBLIC KEY-----"
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBAKHnPiSva9pjkTKYqfP1beikQBriPqGUPPAoBYUF5kwk+r3BfKswcWGV\nKGyuS++VYk5SyaiMLrmDMFETf26XE6yWPa+lakTg+/QgQdyE7/pIfbngdfxvWWO7\nTLRr6Q/Am61Otkb12kgmiJmLTDLV5a+6L19f85+g7YKvbL4G0k9BAgMBAAE=\n-----END PUBLIC KEY-----"
     },
-    fingerprint : "SdxF0IU8Kq9sfD/x46uRC4W8VJ4WmVF8j0Je6ZMIURLoFju/SFEtSC41ibU7R6cgINfUpZ4QCfVpo0+rHwlXBNeyZS5vqf1+fvMuISucRWGjmFmusTAqtqN0RCDvhdkeaxuQyMJKAGlzkcm5CXeqWyijDOQOZyf2pGJlfs18e2c="
+    fingerprint : "cPeswyjeFKMgw963GcptO4aiwriAHXYImmJH+nxlLvvahPOLOO/Usi8hEGR1NUGg4iDFj9TzwyV7WhJ/X7bHB1/YcU5rouhEDn8XTqhR2hOkbn7UvlF4ASaB21e4ibDKjri4vQY0w8HY32GdxvR5BMMtE+DaaFOZKPHKwGTSNGc="
 }
 ```
 
@@ -60,17 +60,24 @@ The ID format is ```name@address[/terminal]```.
 
 ```
 /* examples */
-ID1 = "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN"; // immortal hulk
-ID2 = "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi"; // monkey king
+ID1 = "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"; // immortal hulk
+ID2 = "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU"; // monkey king
 ```
 
 #### Name
 The **Name** field is an entity name (username, or just a random string for group).
 
-You can use any 'C' type variable naming string, e.g.: ```name = "moky";```
+1. The length of name must more than 1 byte, less than 32 bytes;
+2. It should be composed by a-z, A-Z, 0-9, or charactors '_', '-', '.';
+3. It cannot contain charactors '@' and '/'.
+
+```
+// For example
+name = "Albert.Moky";
+```
 
 #### Address
-The **Address** field was created by the 'Meta' info and the network ID:
+The **Address** field was created by the **Meta** info and the **Network ID**:
 
 ````
 // Network ID
@@ -80,10 +87,11 @@ enum {
 };
 
 // Address algorithm
-function BUILD(fingerprint, network) {
-    hash    = ripemd160(sha256(fingerprint));
-    code    = sha256(sha256(network+hash)).prefix(4); // check code
-    address = base58(network+hash+code);
+function btcBuildAddress(fingerprint, network) {
+    hash       = ripemd160(sha256(fingerprint));
+    check_code = sha256(sha256(network + hash)).prefix(4);
+    address    = base58(network + hash + code);
+    return address;
 }
 ````
 
@@ -93,16 +101,30 @@ when you get a meta for the entity ID from the network,
 you must verify it with the consensus algorithm before accept it:
 
 ```
-network = MKMNetwork_Main;
-CT      = meta.fingerprint;
-PK      = meta.key;
-name    = meta.seed;
-address = BUILD(CT, network);
-
-if (ID.name == name && ID.address == address && verify(name, CT, PK)) {
-    correct = true;
-} else {
-    correct = false;
+/**
+ *  network = MKMNetwork_Main; // ID.address.network
+ *  name    = meta.seed;
+ *  PK      = meta.key;
+ *  address = btcBuildAddress(meta.fingerprint, network);
+ */
+function isMatch(ID, meta) {
+    // 1. check 'seed', 'key' & 'fingerprint' in meta with ID.name
+    if (meta.seed != ID.name) {
+        return false;
+    }
+    if (verify(meta.seed, meta.fingerprint, meta.key)) {
+        return false;
+    }
+    
+    // 2. build address with meta, compare it with ID.address
+    address = btcBuildAddress(meta.fingerprint, ID.address.network);
+    if (address != ID.address) {
+        return false;
+    }
+    
+    // 3. if all of the above matches, get public key from meta
+    ID.publicKey = meta.key;
+    return true;
 }
 ```
 
@@ -125,9 +147,9 @@ user = new Account(ID, PK);
 
 ```
 {
-    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541953306
+    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+    time     : 1542984590
 }
 ```
 
@@ -136,7 +158,7 @@ user = new Account(ID, PK);
 ````
 {
     type     : 0x01,       // message type
-    sn       : 3125856764, // serial number (message ID in conversation)
+    sn       : 1682437361, // serial number (message ID in conversation)
     
     text     : "Hey guy!"
 }
@@ -184,21 +206,21 @@ Similarly, when the client received a message, it needs TWO steps to extract the
 ````
 {
     //-------- head (envelope) --------
-    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541953306,
+    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+    time     : 1542984590,
     
     //-------- body (content) ---------
     content  : {
         type : 0x01,       // message type
-        sn   : 3125856764, // serial number (ID)
+        sn   : 1682437361, // serial number (ID)
         text : "Hey guy!"
     }
     
 }
 ````
 
-content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
+content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
 
 #### Secure Message
 
@@ -212,13 +234,13 @@ content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541953306,
+    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+    time     : 1542984590,
     
     //-------- body (content) ---------
-    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
-    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE="
+    data     : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
+    key      : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API="
 }
 ```
 
@@ -233,14 +255,14 @@ content -> JsON string: ```{"sn":3125856764,"text":"Hey guy!","type":1}```
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4LrJHfGgDD6Ui3rWbPtftFabmN8damzRsi",
-    receiver : "hulk@4bejC3UratNYGoRagiw8Lj9xJrx8bq6nnN",
-    time     : 1541953306,
+    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
+    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+    time     : 1542984590,
     
     //-------- body (content) ---------
-    data     : "8QKyokYSV/YYCTTi7DhqtEMAyxL/OAKDZ4i72zSRaU8J3+uPLjfyJLj/hg016um/",
-    key      : "SIkSKhy+Di8BbdLqASPoN7Wyzu1kzpwnIAhHxRy9fON/a2s/BnFRoh4g+5K4Q6TDmCNyjx6mkyaekzCfXU6WmilvVjpInYbORX4qTO6tM+XNXaaLEesBaVTg84FyFh6+onqX/I26kmlxmRAv7RibGdRsqMiKoFA0oFnm3CJTJWE=",
-    signature: "m8ZHX10apLYSprdGVWx5OVzT15fdMV9NSqODZx7OHUc1lgaH6yGIw7mD5H3oxNqqBdhQlVxdU/69yRxemdSttH42vjWt36WW1UGNae5Gi7fHy/pGBZgQbf1WnpPX6HXwN2g7v5kvFLnnncCtPMIUFRj2AJMj4kkn0waIldwKYOI="
+    data      : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
+    key       : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API=",
+    signature : "K+YkHm6XRHmUz1X1XlwhrybkrBCkeo9nBPg3fzFJISxTtepUjaAQuOVpjEkte69dCKIMF+rQZKq1Gi3BBqXAGmvoUCnuFm9zy1f4T3PpCoOvoASca5fbYSSXSls0XV/BHtZJo+0SkMkzrFpWR9941y0XgnvfTYvwUeYqYrcYCw4="
 }
 ```
 

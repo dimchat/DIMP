@@ -60,8 +60,8 @@ The ID format is ```name@address[/terminal]```.
 
 ```
 /* examples */
-ID1 = "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"; // immortal hulk
-ID2 = "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU"; // monkey king
+ID1 = "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"; // Immortal Hulk
+ID2 = "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU"; // Monkey King
 ```
 
 #### Name
@@ -69,7 +69,7 @@ The **Name** field is an entity name (username, or just a random string for grou
 
 1. The length of name must more than 1 byte, less than 32 bytes;
 2. It should be composed by a-z, A-Z, 0-9, or charactors '_', '-', '.';
-3. It cannot contain charactors '@' and '/'.
+3. It cannot contain key charactors('@', '/').
 
 ```
 // For example
@@ -96,17 +96,11 @@ function btcBuildAddress(fingerprint, network) {
 ````
 
 ### 1.2. Public Key
-A **public key** (PK) was binding to an ID by the __Meta Algorithm__,
+A **public key** (PK) was binded to an ID by the __Meta Algorithm__,
 when you get a meta for the entity ID from the network,
 you must verify it with the consensus algorithm before accept it:
 
 ```
-/**
- *  network = MKMNetwork_Main; // ID.address.network
- *  name    = meta.seed;
- *  PK      = meta.key;
- *  address = btcBuildAddress(meta.fingerprint, network);
- */
 function isMatch(ID, meta) {
     // 1. check 'seed', 'key' & 'fingerprint' in meta with ID.name
     if (meta.seed != ID.name) {
@@ -138,7 +132,11 @@ An **account** will have a **public key**.
 A **group** will have **founder**, **owner** and **members**.
 
 ```
+// create account
 user = new Account(ID, PK);
+
+// create group
+group = new Group(ID, founder);
 ```
 
 ## 2. Messaging
@@ -169,22 +167,23 @@ user = new Account(ID, PK);
 ````
 enum {
     DIMMessageType_Unknown = 0x00,
+    
     DIMMessageType_Text    = 0x01,
     
     DIMMessageType_File    = 0x10,
-    DIMMessageType_Image   = 0x12,
-    DIMMessageType_Audio   = 0x14,
+    DIMMessageType_Image   = 0x12, // photo
+    DIMMessageType_Audio   = 0x14, // voice
     DIMMessageType_Video   = 0x16,
     
-    DIMMessageType_Page    = 0x20,
+    DIMMessageType_Page    = 0x20, // web page
     
-    // quote a message before and reply it with text
+    // quote an exists message and reply it with text
     DIMMessageType_Quote   = 0x37,
     
     // system command
     DIMMessageType_Command = 0x88,
     
-    // top-secret message forward by proxy
+    // top-secret message forwarded by proxy(account or station)
     DIMMessageType_Forward = 0xFF
 };
 ````
@@ -227,10 +226,10 @@ content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
 ```
 /**
  *  Algorithm:
- *      json = json(content);
- *      PW   = random();
- *      data = encrpyt(json, PW);        // Symmetric
- *      key  = encrypt(PW, receiver.PK); // Asymmetric
+ *      string = json(content);
+ *      PW     = random();
+ *      data   = encrpyt(string, PW);      // Symmetric
+ *      key    = encrypt(PW, receiver.PK); // Asymmetric
  */
 {
     //-------- head (envelope) --------
@@ -268,4 +267,4 @@ content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
 
 
 ---
-Written by [Albert Moky](http://moky.github.com/) Sun Nov 11 23:18:08 CST 2018
+Version 0.1 by [Albert Moky](http://moky.github.com/) [Sun Nov 11 23:18:08 CST 2018]

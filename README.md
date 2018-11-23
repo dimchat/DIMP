@@ -1,12 +1,17 @@
 # Decentralized Instant Messaging Protocol (DIMP)
 
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/moky/DIMP/blob/master/LICENSE)
+[![Version](https://img.shields.io/badge/alpha-0.1.0-red.svg)](https://github.com/moky/DIMP/wiki)
+
 ## 0. Abstract
-This document introduces a new protocol designed for instant messaging and an architecture for developing decentralized IM applications. The software provides accounts(user identity recognition) and communications(instant message) between accounts safely by end-to-end encryption.
+This document introduces a new protocol designed for instant messaging (IM) and an architecture for developing decentralized IM applications. The software provides accounts(user identity recognition) and communications between accounts safely by end-to-end encryption.
 
 It includes just TWO extremely simple parts:
 
 1. User Identify
 2. Messaging
+
+Copyright &copy; 2018 Albert Moky
 
 ### White papers
 
@@ -133,10 +138,10 @@ A **group** will have **founder**, **owner** and **members**.
 
 ```
 // create account
-user = new Account(ID, PK);
+user = new Account(accountID, accountPK);
 
 // create group
-group = new Group(ID, founder);
+group = new Group(groupID, founderID);
 ```
 
 ## 2. Messaging

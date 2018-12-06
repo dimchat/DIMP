@@ -121,18 +121,18 @@ Meta 信息是一个数据结构，包含以下 4 个字段：
 4. fingerprint - 指纹信息，由用户私钥（SK）对信息种子签名而得，用于生成 ID.address。
 
 ```javascript
-/* Meta 信息实例，对应 ID 实例为 "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ" */
+/* Meta 信息实例，对应 ID 实例为 "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj" */
 {
     version     : 0x01,
     seed        : "hulk",
     key         : {
         // 公钥算法名称
-        algorithm : "RSA",
+        algorithm : "RSA", // encrypt: PKCS1, sign: PKCS1v15SHA256
         // 公钥数据（支持直接导入 PEM 等格式文件）
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBAKHnPiSva9pjkTKYqfP1beikQBriPqGUPPAoBYUF5kwk+r3BfKswcWGV\nKGyuS++VYk5SyaiMLrmDMFETf26XE6yWPa+lakTg+/QgQdyE7/pIfbngdfxvWWO7\nTLRr6Q/Am61Otkb12kgmiJmLTDLV5a+6L19f85+g7YKvbL4G0k9BAgMBAAE=\n-----END PUBLIC KEY-----"
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----"
         // 其他公钥参数
     },
-    fingerprint : "cPeswyjeFKMgw963GcptO4aiwriAHXYImmJH+nxlLvvahPOLOO/Usi8hEGR1NUGg4iDFj9TzwyV7WhJ/X7bHB1/YcU5rouhEDn8XTqhR2hOkbn7UvlF4ASaB21e4ibDKjri4vQY0w8HY32GdxvR5BMMtE+DaaFOZKPHKwGTSNGc="
+    fingerprint : "jIPGWpWSbR/DQH6ol3t9DSFkYroVHQDvtbJErmFztMUP2DgRrRSNWuoKY5Y26qL38wfXJQXjYiWqNWKQmQe/gK8M8NkU7lRwm+2nh9wSBYV6Q4WXsCboKbnM0+HVn9Vdfp21hMMGrxTX1pBPRbi0567ZjNQC8ffdW2WvQSoec2I="
 }
 ```
 
@@ -260,10 +260,10 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 {
     type    : 0x88,      // DIMMessageType_Command
     sn      : 794594362,
-    group   : "Polylogue-1234567890@7jA5JmnrsM46hcynsKdcns47d4fYwpbbn7",
+    group   : "Polylogue-1234567890@7XrUr4staRFC5xu7iCqXRMpbawAGMyASUR",
     
     command : "invite",
-    member  : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"
+    member  : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj"
 }
 ```
 
@@ -424,8 +424,8 @@ _（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这
     sn   : 5678,
     
     forward : { // top-secret message
-        sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-        receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
+        sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+        receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
         time     : 1542075610,
         
         data      : "BASE64_ENCODE", // top-secret content
@@ -480,8 +480,7 @@ key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 签名算法如下：
 
 ```javascript
-digest    = sha256(sha256(data));    // 1. 先计算 data 的摘要信息
-signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
+signature = sign(data, sender.SK);
 ```
 
 最终发送到 DIM 网络中的只有 Certified Message 信息包，DIM 网络仅负责快速正确投递信息包，无法解密其内容、也无法篡改冒充，在当前世界算力水平下可确保足够安全。以下是一个测试实例：
@@ -497,19 +496,18 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
  *      data   = encrpyt(string, PW);      // Symmetric
  *      key    = encrypt(PW, receiver.PK); // Asymmetric
  *      // 2. 签名
- *      digest    = sha256(sha256(data));
- *      signature = sign(digest, sender.SK);
+ *      signature = sign(data, sender.SK);
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
-    time     : 1542984590,
+    sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+    receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
+    time     : 1544106533,
     
     //-------- body (content) ---------
-    data      : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
-    key       : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API=",
-    signature : "K+YkHm6XRHmUz1X1XlwhrybkrBCkeo9nBPg3fzFJISxTtepUjaAQuOVpjEkte69dCKIMF+rQZKq1Gi3BBqXAGmvoUCnuFm9zy1f4T3PpCoOvoASca5fbYSSXSls0XV/BHtZJo+0SkMkzrFpWR9941y0XgnvfTYvwUeYqYrcYCw4="
+    data      : "1e8OshcP8Z1XBf49ABJkTGNbIVWS8HjD2DCVEv7HmzMv4LqMKdZBSr4wvf4lXrAk",
+    key       : "MnaepvMge7eSSKGeYr2YYblvQr3DPVb3xe3HBC4u5BScusHydQ4/lx0Vl3rvzC3uLMdGVN+BG4qmjYYt53hLSCJhwfwwLynuw/ldSeABQG9t0ObKHnpgAwkvchfDINs2ssz6QgD9bDuV1WzwH49ycNTr84Wa12vXzjERJYalpvw=",
+    signature : "oKcdCzYfysL5CJNCkgRUfeiRGG5AfEWc6GPerLafUbFWW+sij1codi3kZCiHiBlC4Ya4D/I+2xST78A0GME8P1b//LRP+/4Lh8tOE4qRPjj/G8eWSXvjsLkRbjiLeNmNHiD74BR84/Q0d18T0dlP5hQ30DzBKzauZzrhMas89kc="
 }
 ```
 
@@ -656,7 +654,7 @@ signature = sign(digest, sender.SK); // 2. 再对摘要信息进行签名
              *    1. 先将 login 转换为 JsON 字符串
              *    2. 再对 login 字符串 hash 签名
              */
-            signature : "BASE64_ENCODE", // sign(sha256d(json(login)), user.SK);
+            signature : "BASE64_ENCODE", // sign(json(login), user.SK);
             
             /**
              *  路由信息

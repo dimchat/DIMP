@@ -34,15 +34,15 @@ The 'Meta' consists of 4 fields:
 | fingerprint | Signature to generate address |
 
 ```
-/* example: hulk */
+/* example: hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj */
 {
     version     : 0x01,
     seed        : "hulk",
     key         : {
-        algorithm : "RSA",
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBAKHnPiSva9pjkTKYqfP1beikQBriPqGUPPAoBYUF5kwk+r3BfKswcWGV\nKGyuS++VYk5SyaiMLrmDMFETf26XE6yWPa+lakTg+/QgQdyE7/pIfbngdfxvWWO7\nTLRr6Q/Am61Otkb12kgmiJmLTDLV5a+6L19f85+g7YKvbL4G0k9BAgMBAAE=\n-----END PUBLIC KEY-----"
+        algorithm : "RSA", // encrypt: PKCS1, sign: PKCS1v15SHA256
+        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----"
     },
-    fingerprint : "cPeswyjeFKMgw963GcptO4aiwriAHXYImmJH+nxlLvvahPOLOO/Usi8hEGR1NUGg4iDFj9TzwyV7WhJ/X7bHB1/YcU5rouhEDn8XTqhR2hOkbn7UvlF4ASaB21e4ibDKjri4vQY0w8HY32GdxvR5BMMtE+DaaFOZKPHKwGTSNGc="
+    fingerprint : "jIPGWpWSbR/DQH6ol3t9DSFkYroVHQDvtbJErmFztMUP2DgRrRSNWuoKY5Y26qL38wfXJQXjYiWqNWKQmQe/gK8M8NkU7lRwm+2nh9wSBYV6Q4WXsCboKbnM0+HVn9Vdfp21hMMGrxTX1pBPRbi0567ZjNQC8ffdW2WvQSoec2I="
 }
 ```
 
@@ -65,8 +65,8 @@ The ID format is ```name@address[/terminal]```.
 
 ```
 /* examples */
-ID1 = "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ"; // Immortal Hulk
-ID2 = "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU"; // Monkey King
+ID1 = "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj"; // Immortal Hulk
+ID2 = "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk"; // Monkey King
 ```
 
 #### Name
@@ -150,9 +150,9 @@ group = new Group(groupID, founderID);
 
 ```
 {
-    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
-    time     : 1542984590
+    sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+    receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
+    time     : 1544106533
 }
 ```
 
@@ -161,7 +161,7 @@ group = new Group(groupID, founderID);
 ````
 {
     type     : 0x01,       // message type
-    sn       : 1682437361, // serial number (message ID in conversation)
+    sn       : 1544106533, // serial number (message ID in conversation)
     
     text     : "Hey guy!"
 }
@@ -210,21 +210,21 @@ Similarly, when the client received a message, it needs TWO steps to extract the
 ````
 {
     //-------- head (envelope) --------
-    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
-    time     : 1542984590,
+    sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+    receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
+    time     : 1544106533,
     
     //-------- body (content) ---------
     content  : {
         type : 0x01,       // message type
-        sn   : 1682437361, // serial number (ID)
+        sn   : 1544106533, // serial number (ID)
         text : "Hey guy!"
     }
     
 }
 ````
 
-content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
+content -> JsON string: ```{"sn":1544106533,"text":"Hey guy!","type":1}```
 
 #### Secure Message
 
@@ -238,13 +238,13 @@ content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
-    time     : 1542984590,
+    sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+    receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
+    time     : 1544106533,
     
     //-------- body (content) ---------
-    data     : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
-    key      : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API="
+    data     : "1e8OshcP8Z1XBf49ABJkTGNbIVWS8HjD2DCVEv7HmzMv4LqMKdZBSr4wvf4lXrAk",
+    key      : "MnaepvMge7eSSKGeYr2YYblvQr3DPVb3xe3HBC4u5BScusHydQ4/lx0Vl3rvzC3uLMdGVN+BG4qmjYYt53hLSCJhwfwwLynuw/ldSeABQG9t0ObKHnpgAwkvchfDINs2ssz6QgD9bDuV1WzwH49ycNTr84Wa12vXzjERJYalpvw="
 }
 ```
 
@@ -259,14 +259,14 @@ content -> JsON string: ```{"sn":1682437361,"text":"Hey guy!","type":1}```
  */
 {
     //-------- head (envelope) --------
-    sender   : "moki@4HaXeu62Q41eemWcL1X5m56Y5JwKK2JJUU",
-    receiver : "hulk@4Qv359gss3FrZpZ2phxykvofmt9fyXx5gJ",
-    time     : 1542984590,
+    sender   : "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk",
+    receiver : "hulk@4YeVEN3aUnvC1DNUufCq1bs9zoBSJTzVEj",
+    time     : 1544106533,
     
     //-------- body (content) ---------
-    data      : "f7UNcvxT8uTMujc4CUVHzrlPbz3FriSfxL8xPonvitRZMSOCGpHV3qfpL8vW/J6U",
-    key       : "TcujklBJChTQZseEy7Q6UEtB/jZS9hLQdes7oUkoqA02c+qY8WDLAWCAORmkaUijyVgZCR/7MuFkM3qsxLb+A5bpKu+5Wbj141kTxr7PFDfqjGX06Qo9zJfYHFLYHSHMpcnCAX68WRU7kYYehNe7jCM7gco2K3TZrWw0Ot75API=",
-    signature : "K+YkHm6XRHmUz1X1XlwhrybkrBCkeo9nBPg3fzFJISxTtepUjaAQuOVpjEkte69dCKIMF+rQZKq1Gi3BBqXAGmvoUCnuFm9zy1f4T3PpCoOvoASca5fbYSSXSls0XV/BHtZJo+0SkMkzrFpWR9941y0XgnvfTYvwUeYqYrcYCw4="
+    data      : "1e8OshcP8Z1XBf49ABJkTGNbIVWS8HjD2DCVEv7HmzMv4LqMKdZBSr4wvf4lXrAk",
+    key       : "MnaepvMge7eSSKGeYr2YYblvQr3DPVb3xe3HBC4u5BScusHydQ4/lx0Vl3rvzC3uLMdGVN+BG4qmjYYt53hLSCJhwfwwLynuw/ldSeABQG9t0ObKHnpgAwkvchfDINs2ssz6QgD9bDuV1WzwH49ycNTr84Wa12vXzjERJYalpvw=",
+    signature : "oKcdCzYfysL5CJNCkgRUfeiRGG5AfEWc6GPerLafUbFWW+sij1codi3kZCiHiBlC4Ya4D/I+2xST78A0GME8P1b//LRP+/4Lh8tOE4qRPjj/G8eWSXvjsLkRbjiLeNmNHiD74BR84/Q0d18T0dlP5hQ30DzBKzauZzrhMas89kc="
 }
 ```
 

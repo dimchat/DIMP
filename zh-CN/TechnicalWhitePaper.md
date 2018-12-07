@@ -540,7 +540,7 @@ signature = sign(data, sender.SK);
  *    PW        = random();
  *    data      = encrypt(json(content), PW);
  *    key       = encrypt(PW, station.PK);
- *    signature = sign(hash(data), user.SK);
+ *    signature = sign(data, user.SK);
  *  生成 Reliable Message 再发送到 Station
  */
 ```
@@ -567,7 +567,7 @@ signature = sign(data, sender.SK);
  *    PW        = random();
  *    data      = encrypt(json(content), PW);
  *    key       = encrypt(PW, user.PK);
- *    signature = sign(hash(data), station.SK);
+ *    signature = sign(data, station.SK);
  *  生成 Reliable Message 再发送到 Client
  */
 ```
@@ -652,7 +652,7 @@ signature = sign(data, sender.SK);
             /**
              *  用户签名
              *    1. 先将 login 转换为 JsON 字符串
-             *    2. 再对 login 字符串 hash 签名
+             *    2. 再对 login 字符串数据进行签名
              */
             signature : "BASE64_ENCODE", // sign(json(login), user.SK);
             

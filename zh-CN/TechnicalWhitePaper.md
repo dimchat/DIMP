@@ -43,7 +43,7 @@ Copyright &copy; 2018 Albert Moky
     - [信息包数据结构](#message-structure)
         - [原始信息包（Instant Message）](#instant-message)
         - [加密信息包（Secure Message）](#secure-message)
-        - [认证信息包（Certified Message）](#certified-message)
+        - [网络传输包（Reliable Message）](#reliable-message)
 - [扩展](#extensions)
     - [握手协议（登录验证）](#handshake)
     - [登录点信息广播协议](#broadcast)
@@ -267,7 +267,7 @@ ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 }
 ```
 
-然后加密、签名，得到 Certified Message（参照 [消息](#message) 章节）。再发送给全部已有成员即可。
+然后加密、签名，得到 Reliable Message（参照 [消息](#message) 章节）。再发送给全部已有成员即可。
 
 #### 退群
 如上，**command** 字段为 ```quit```。
@@ -436,7 +436,7 @@ _（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这
 ```
 
 ### <span id="message-structure">信息包数据结构
-以下是 DIMP 定义的 3 级信息格式，其中 **Instant Message** 为收发双方客户端保存的明文信息格式；**Secure Message** 是打包/解包过程中产生的中间格式；只有 **Certified Message** 会发到网络上进行传送：
+以下是 DIMP 定义的 3 级信息格式，其中 **Instant Message** 为收发双方客户端保存的明文信息格式；**Secure Message** 是打包/解包过程中产生的中间格式；只有 **Reliable Message** 会发到网络上进行传送：
 
 - <span id="instant-message">**原始信息包（Instant Message）**</span>
 
@@ -466,7 +466,7 @@ data   = encrypt(string, PW);      // 3. 对序列化字符串进行加密并替
 key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 ```
 
-- <span id="certified-message">**认证信息包（Certified Message）**</span>
+- <span id="reliable-message">**网络传输包（Reliable Message）**</span>
 
 用发送方私钥对中间信息包（Secure Message）进行签名，最终得到的网络信息包，格式如下：
 
@@ -483,7 +483,7 @@ key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 signature = sign(data, sender.SK);
 ```
 
-最终发送到 DIM 网络中的只有 Certified Message 信息包，DIM 网络仅负责快速正确投递信息包，无法解密其内容、也无法篡改冒充，在当前世界算力水平下可确保足够安全。以下是一个测试实例：
+最终发送到 DIM 网络中的只有 Reliable Message 信息包，DIM 网络仅负责快速正确投递信息包，无法解密其内容、也无法篡改冒充，在当前世界算力水平下可确保足够安全。以下是一个测试实例：
 
 ```javascript
 /**
@@ -541,7 +541,7 @@ signature = sign(data, sender.SK);
  *    data      = encrypt(json(content), PW);
  *    key       = encrypt(PW, station.PK);
  *    signature = sign(hash(data), user.SK);
- *  生成 Certified Message 再发送到 Station
+ *  生成 Reliable Message 再发送到 Station
  */
 ```
 
@@ -568,7 +568,7 @@ signature = sign(data, sender.SK);
  *    data      = encrypt(json(content), PW);
  *    key       = encrypt(PW, user.PK);
  *    signature = sign(hash(data), station.SK);
- *  生成 Certified Message 再发送到 Client
+ *  生成 Reliable Message 再发送到 Client
  */
 ```
 

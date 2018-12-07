@@ -198,11 +198,11 @@ enum {
 When the user want to send out a message, the client needs TWO steps before sending it:
 
 1. encrypt the **Instant Message** to **Secure Message**;
-2. sign the **Secure Message** to **Certified Message**.
+2. sign the **Secure Message** to **Reliable Message**.
 
 Similarly, when the client received a message, it needs TWO steps to extract the content:
 
-1. verify the **Certified Message** to **Secure Message**;
+1. verify the **Reliable Message** to **Secure Message**;
 2. decrypt the **Secure Message** to **Instant Message**.
 
 #### Instant Message
@@ -248,7 +248,7 @@ content -> JsON string: ```{"sn":1544106533,"text":"Hey guy!","type":1}```
 }
 ```
 
-#### Certified Message
+#### Reliable Message
 
 ```
 /**

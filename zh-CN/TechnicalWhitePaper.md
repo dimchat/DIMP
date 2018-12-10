@@ -179,15 +179,15 @@ meta.seed        = "moky";
 meta.key         = PK;
 meta.fingerprint = sign(meta.seed, SK); // 具体算法由公钥 meta.key 决定
 
-// 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹哈希 hash
-// 3. 将 Network ID 与指纹哈希 hash 拼接后再双哈希（sha256 + sha256）
+// 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹摘要信息 digest
+// 3. 将 Network ID 与指纹摘要信息 digest 拼接后再双哈希（sha256 + sha256）
 //    然后取其结果前 4 个字节作为校验码
-// 4. 将 Network ID、指纹哈希 hash、校验码 check_code 三者拼接后
+// 4. 将 Network ID、指纹摘要信息 digest、校验码 check_code 三者拼接后
 //    再 base58 编码即得到账号地址
 function btcBuildAddress(fingerprint, network) {
-    hash       = ripemd160(sha256(fingerprint));
-    check_code = sha256(sha256(network + hash)).prefix(4);
-    address    = base58(network + hash + check_code);
+    digest     = ripemd160(sha256(fingerprint));
+    check_code = sha256(sha256(network + digest)).prefix(4);
+    address    = base58_encode(network + digest + check_code);
     return address;
 }
 
@@ -220,7 +220,7 @@ function isMatch(ID, meta) {
 }
 ```
 
-在我们的 DIMP 定义中，个人账号 Network ID 统一为 ```0x08```，群组为 ```0x10```（其他类型暂时用不到，以后需要再由组委会讨论扩展）。
+上面提到的 **Network ID** 为 1个字节长度的字符数据，表示该 ID 的类型和用途。在 DIMP 规范中，个人账号统一取值为 ```0x08```，群组为 ```0x10```，详见 [dimc-objc:/mkm/entity/address](https://github.com/moky/dimc-objc/blob/master/Classes/mkm/entity/MKMAddress.h) 的定义（其他类型暂时用不到，以后需要再由组委会讨论扩展）。
 
 ### <span id="number">Search Number（检索号）</span>
 由于 Address 字段对人类记忆力极不友好，所以通常需要用直接复制 ID 字符串或者扫码的方式来添加好友，无法像手机号码、QQ号码那样口头传播，所以我在此特别引入了**账户检索号**的概念。
@@ -346,7 +346,7 @@ _（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这
     sn   : 1234,
     
     URL      : "http://",       // encrypt & upload to CDN
-    snapshot : "BASE64_ENCODE", // base64(smallImage)
+    snapshot : "BASE64_ENCODE", // base64_encode(smallImage)
     filename : "photo.png"
 }
 ```
@@ -371,7 +371,7 @@ _（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这
     sn   : 1234,
     
     URL      : "http://",      // encrypt & upload to CDN
-    snapshot : "BASE64_ENCODE" // base64(smallImage)
+    snapshot : "BASE64_ENCODE" // base64_encode(smallImage)
 }
 ```
 
@@ -383,7 +383,7 @@ _（注：DIM 项目第一阶段由于使用人数较少，暂时无需实现这
     sn   : 1234,
     
     URL   : "http://",       // Web Page URL
-    icon  : "BASE64_ENCODE", // base64(icon)
+    icon  : "BASE64_ENCODE", // base64_encode(icon)
     title : "...",
     desc  : "..."
 }

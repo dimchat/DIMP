@@ -80,7 +80,7 @@ Copyright &copy; 2018 Albert Moky
 IM 工具的竞争，是当今互联网世界最激烈的竞争领域之一，且已基本形成寡头垄断态势。为了在这个已被深耕多年的领域生存和发展，基于去中心化设计的 IM 工具必须要满足以下的要求，才能解决中心化 IM 所不能解决的那些问题，进而赢得广泛的应用。
 
 ### <span id="identity">去中心化的用户身份认证技术</span>
-去中心化 IM，首先要解决的就是去中心化用户身份认证技术。现有的用户身份认证系统，依靠的是简单的 ID+Password 配对技术，也即需要一个可靠的数据库去保存配对信息，因此中心化不可避免。
+去中心化 IM，首先要解决的就是去中心化用户身份认证技术。现有的用户身份认证系统，依靠的是简单的 ID+Password 配对技术，也即需要一个可靠的数据中心去保存配对信息，因此中心化不可避免。
 
 去中心化的用户身份认证系统，需要从算法上保证无需中心化数据库来保存配对信息，仅仅基于**共识算法**就可以实现身份认证。
 
@@ -107,13 +107,13 @@ DIMP 引入了3类信息的共识机制：身份确认算法、关系维护机�
 ### <span id="identification">身份确认</span>
 首先，用户账号 ID 通过一个我称之为“元”（Meta）的数据结构来生成，该生成算法确保了用户的 ID 与其非对称密钥对（PK+SK）之间的关联关系。
 
-ID 是一个格式为 ```name@address[/terminal]``` 的字符串，主要包含 name 和 address 两个字段，另外一个可选字段 terminal 用于标明该 ID 当前登录设备，以区分多终端登录的情形：
+**ID** 是一个格式为 ```name@address[/terminal]``` 的字符串，主要包含 name 和 address 两个字段，另外一个可选字段 terminal 用于标明该 ID 当前登录设备，以区分多终端登录的情形：
 
 1. name - 账号名，非唯一；
 2. address - 由 Meta 算法计算得到的地址，在当前算力下可保证全网唯一性；
 3. terminal - 登录点名称（可选项），仅用于表示同一个 ID 在不同地方登录。
 
-Meta 信息是一个数据结构，包含以下 4 个字段：
+**Meta** 信息是一个数据结构，包含以下 4 个字段：
 
 1. version - “元”算法版本号，当前为 1；
 2. seed - 信息种子，用于生成指纹信息，同时用作 ID.name；
@@ -127,10 +127,13 @@ Meta 信息是一个数据结构，包含以下 4 个字段：
     seed        : "hulk",
     key         : {
         // 公钥算法名称
-        algorithm : "RSA", // encrypt: PKCS1, sign: PKCS1v15SHA256
+        algorithm  : "RSA",
         // 公钥数据（支持直接导入 PEM 等格式文件）
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----"
-        // 其他公钥参数
+        data       : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----",
+        // 其他参数（默认值）
+        keySize    : 1024,
+        encryption : "PKCS1",
+        signature  : "PKCS1v15SHA256"
     },
     fingerprint : "jIPGWpWSbR/DQH6ol3t9DSFkYroVHQDvtbJErmFztMUP2DgRrRSNWuoKY5Y26qL38wfXJQXjYiWqNWKQmQe/gK8M8NkU7lRwm+2nh9wSBYV6Q4WXsCboKbnM0+HVn9Vdfp21hMMGrxTX1pBPRbi0567ZjNQC8ffdW2WvQSoec2I="
 }
@@ -158,7 +161,7 @@ DIMP 的账号（ID）是一个格式为 ```name@address``` 的字符串，其�
 2. 应由英文字母（区分大小写）、数字0-9、下横线“_”、横线“-”、小数点“.”等组成，不包括空格以及其他特殊字符；
 3. 不能包含保留字符“@”与“/”。
 
-其中第1条和第3条是由算法本身决定的，第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字，不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供。
+其中第3条是由算法本身决定的，第1条和第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字（不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供）。
 
 ```
 // 举例
@@ -167,14 +170,14 @@ name = "Albert.Moky";
 
 ### <span id="address">Address（账号地址）</span>
 
-DIMP 的账号地址由 Meta 算法生成，算法如下：
+DIMP 的账号地址由 Meta 算法生成，过程如下：
 
 ```javascript
 // 1. 用用户私钥 SK 对种子 seed 进行签名生成指纹信息
 meta.version     = 0x01;
 meta.seed        = "moky";
 meta.key         = PK;
-meta.fingerprint = sign(meta.seed, SK);
+meta.fingerprint = sign(meta.seed, SK); // 具体算法由公钥 meta.key 决定
 
 // 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹哈希 hash
 // 3. 将 Network ID 与指纹哈希 hash 拼接后再双哈希（sha256 + sha256）
@@ -193,7 +196,7 @@ ID.name    = meta.seed;
 ID.address = btcBuildAddress(meta.fingerprint, network);
 ```
 
-校验算法如下：
+校验过程如下：
 
 ```javascript
 function isMatch(ID, meta) {
@@ -216,6 +219,8 @@ function isMatch(ID, meta) {
     return true;
 }
 ```
+
+在我们的 DIMP 定义中，个人账号 Network ID 统一为 ```0x08```，群组为 ```0x10```（其他类型暂时用不到，以后需要再由组委会讨论扩展）。
 
 ### <span id="number">Search Number（检索号）</span>
 由于 Address 字段对人类记忆力极不友好，所以通常需要用直接复制 ID 字符串或者扫码的方式来添加好友，无法像手机号码、QQ号码那样口头传播，所以我在此特别引入了**账户检索号**的概念。
@@ -637,32 +642,56 @@ signature = sign(data, sender.SK);
             /**
              *  登录信息
              */
-            login : {
-                // 基站(节点)信息
-                station  : "STATION_ID",
-                host     : "211.66.6.1",
-                port     : 9394,
-                time     : 1542157677,  // 登录时间
+            login     : {
+                // 当前登录的基站(节点)信息
+                station   : "STATION_ID",
+                host      : "211.66.6.1",
+                port      : 9394,
+                time      : 1542157677,  // 登录时间
                 // 终端(客户端)信息
-                account  : "USER_ID",
-                terminal : "DEVICE_ID", // 终端标识（可选）
-                userAgent: "USER_AGENT" // 其他信息
+                account   : "USER_ID",
+                terminal  : "DEVICE_ID", // 终端标识（可选）
+                userAgent : "USER_AGENT" // 其他信息
             },
             
             /**
              *  用户签名
-             *    1. 先将 login 转换为 JsON 字符串
-             *    2. 再对 login 字符串数据进行签名
+             *    1. 先将 login 转换为 JsON 字符串（替换）
+             *    2. 再对 login（字符串数据）进行签名
              */
-            signature : "BASE64_ENCODE", // sign(json(login), user.SK);
+            signature : "BASE64_ENCODE" // sign(json(login), user.SK);
+        },
             
-            /**
-             *  路由信息
-             */
-            traces : [
-                { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
-            ]
-        }
+        /**
+         *  广播路径记录，作为广播信息的附件一起发送
+         */
+        traces    : [
+            { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
+        ]
+    }
+}
+```
+
+也可以作为**广播子协议**单独使用：
+
+```javascript
+{
+    sender   : "USER_ID"
+    receiver : "STATION_ID"
+    time     : 1542157677,
+    
+    content  : {
+        type    : 0x88, // DIMMessageType_Command
+        sn      : 5678,
+        command : "broadcast",
+        
+        // 被全网广播的数据结构
+        broadcast : {
+            // 内容同上
+        },
+        traces    : [
+            // 内容同上
+        ]
     }
 }
 ```

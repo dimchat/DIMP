@@ -598,6 +598,12 @@ signature = sign(data, sender.SK);
         sn      : 1234,
         command : "handshake",
         message : "Hello world!" // Hi!
+    },
+    
+    meta     : {
+        // 跟用户 ID 对应的 meta 信息
+        // 如果是新用户，station 会在校验正确后保存此信息
+        // 如果 station 已保存过该信息，则忽略之
     }
 }
 /**

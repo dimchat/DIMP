@@ -22,15 +22,15 @@ Copyright &copy; 2018 Albert Moky
 
 ### 1.0. Meta
 
-See [mkm.Meta](https://github.com/dimchat/mkm-objc#meta) for details.
+See [mkm.Meta](MingKeMing-Identity.md#meta) for details.
 
 ### 1.1. ID
 
-See [mkm.ID](https://github.com/dimchat/mkm-objc#id) for details.
+See [mkm.ID](MingKeMing-Identity.md#id) for details.
 
 ### 1.2. Public Key
 
-A **public key** (PK) was binded to an ID by the [Meta Algorithm](https://github.com/dimchat/mkm-objc#id-address).
+A **public key** (PK) was binded to an ID by the [Meta Algorithm](MingKeMing-Identity.md#id-address).
 
 ### 1.3. Entity (Account/Group)
 **Entity** is the sender/receiver in the network communication.
@@ -53,19 +53,19 @@ group = new Group(groupID, founderID);
 
 ### 2.0. Envelope
 
-See [dkd.Envelope](https://github.com/dimchat/dkd-objc#envelope) for details.
+See [dkd.Envelope](DaoKeDao-Message.md#envelope) for details.
 
 ### 2.1. Content
 
-See [dkd.Content](https://github.com/dimchat/dkd-objc#content) for details.
+See [dkd.Content](DaoKeDao-Message.md#content) for details.
 
 ### 2.2. Instant Message
 
-See [dkd.InstantMessage](https://github.com/dimchat/dkd-objc#instant-message) for details.
+See [dkd.InstantMessage](DaoKeDao-Message.md#instant-message) for details.
 
 ### 2.3. Reliable Message
 
-See [dkd.ReliableMessage](https://github.com/dimchat/dkd-objc#reliable-message) for details.
+See [dkd.ReliableMessage](DaoKeDao-Message.md#reliable-message) for details.
 
 ---
 Version 0.1 by [Albert Moky](http://moky.github.com/) [Sun Nov 11 23:18:08 CST 2018]

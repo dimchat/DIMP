@@ -690,7 +690,7 @@ signature = sign(data, sender.SK);
 2. Station 在收到此信息包并验证+去重后，更新本地数据库并向全网广播此数据结构；
 3. 每一个 Station 在收到此数据结构时，将自身信息加入到该结构所附带的传播路径（traces）并转发给其余已建立连接的 Station。
 
-登录信息包数据格式如下：
+登录信息包数据格式如下（在第3次握手协议基础上扩展）：
 
 ```javascript
 {
@@ -729,10 +729,8 @@ signature = sign(data, sender.SK);
              */
             signature : "BASE64_ENCODE" // sign(json(login), user.SK);
         },
-            
-        /**
-         *  广播路径记录，作为广播信息的附件一起发送
-         */
+        
+        // 广播路径记录，作为广播信息的附件一起发送
         traces    : [
             { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
         ]
@@ -753,11 +751,12 @@ signature = sign(data, sender.SK);
         sn      : 5678,
         command : "broadcast",
         
-        // 被全网广播的数据结构
+        // 全网广播信息
         broadcast : {
             // 内容同上
         },
         
+        // 广播路径记录
         traces    : [
             // 内容同上
         ]

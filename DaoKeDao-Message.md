@@ -74,13 +74,13 @@ enum {
 
 When the user want to send out a message, the client needs TWO steps before sending it:
 
-1. encrypt the **Instant Message** to **Secure Message**;
-2. sign the **Secure Message** to **Reliable Message**.
+1. Encrypt the **Instant Message** to **Secure Message**;
+2. Sign the **Secure Message** to **Reliable Message**.
 
 Accordingly, when the client received a message, it needs TWO steps to extract the content:
 
-1. verify the **Reliable Message** to **Secure Message**;
-2. decrypt the **Secure Message** to **Instant Message**.
+1. Verify the **Reliable Message** to **Secure Message**;
+2. Decrypt the **Secure Message** to **Instant Message**.
 
 ### <span id="instant-message">Instant Message</span>
 
@@ -144,3 +144,5 @@ content -> JsON string: ```{"sn":412968873,"text":"Hey guy!","type":1}```
     signature : "Yo+hchWsQlWHtc8iMGS7jpn/i9pOLNq0E3dTNsx80QdBboTLeKoJYAg/lI+kZL+g7oWJYpD4qKemOwzI+9pxdMuZmPycG+0/VM3HVSMcguEOqOH9SElp/fYVnm4aSjAJk2vBpARzMT0aRNp/jTFLawmMDuIlgWhBfXvH7bT7rDI="
 }
 ```
+
+(All data encode with **BASE64** algorithm as default)

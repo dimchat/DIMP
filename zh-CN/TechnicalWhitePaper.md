@@ -202,12 +202,13 @@ ID.address = btcBuildAddress(meta.fingerprint, network);
 校验过程如下：
 
 ```javascript
+// Meta algorithm
 function isMatch(ID, meta) {
     // 1. 首先检查 Meta 信息中的 seed、key、fingerprint 与 ID.name 是否对应
     if (meta.seed != ID.name) {
         return false;
     }
-    if (verify(meta.seed, meta.fingerprint, meta.key)) {
+    if (!verify(meta.seed, meta.fingerprint, meta.key)) {
         return false;
     }
     

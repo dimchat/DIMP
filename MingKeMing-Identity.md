@@ -115,7 +115,7 @@ function isMatch(ID, meta) {
     if (meta.seed != ID.name) {
         return false;
     }
-    if (verify(meta.seed, meta.fingerprint, meta.key)) {
+    if (!verify(meta.seed, meta.fingerprint, meta.key)) {
         return false;
     }
     
@@ -133,7 +133,7 @@ function isMatch(ID, meta) {
 
 ### <span id="id-terminal">1.3. Terminal</span>
 
-A resource identifier as **login point**.
+A resource identifier as **Login Point**.
 
 ### <span id="id-number">1.4. Number</span>
 
@@ -157,9 +157,15 @@ ID2 = "moki@4WDfe3zZ4T7opFSi3iDAKiuTnUHjxmXekk"; // Monkey King
     version     : 0x01,
     seed        : "hulk",
     key         : {
-        algorithm : "RSA", // encrypt: PKCS1, sign: PKCS1v15SHA256
-        data      : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----"
+        algorithm  : "RSA",
+        data       : "-----BEGIN PUBLIC KEY-----\nMIGJAoGBALB+vbUK48UU9rjlgnohQowME+3JtTb2hLPqtatVOW364/EKFq0/PSdnZVE9V2Zq+pbX7dj3nCS4pWnYf40ELH8wuDm0Tc4jQ70v4LgAcdy3JGTnWUGiCsY+0Z8kNzRkm3FJid592FL7ryzfvIzB9bjg8U2JqlyCVAyUYEnKv4lDAgMBAAE=\n-----END PUBLIC KEY-----",
+        // other parameters
+        keySize    : 1024,
+        encryption : "PKCS1",
+        signature  : "PKCS1v15SHA256"
     },
     fingerprint : "jIPGWpWSbR/DQH6ol3t9DSFkYroVHQDvtbJErmFztMUP2DgRrRSNWuoKY5Y26qL38wfXJQXjYiWqNWKQmQe/gK8M8NkU7lRwm+2nh9wSBYV6Q4WXsCboKbnM0+HVn9Vdfp21hMMGrxTX1pBPRbi0567ZjNQC8ffdW2WvQSoec2I="
 }
 ```
+
+(All data encode with **BASE64** algorithm as default, excepts the **address**)

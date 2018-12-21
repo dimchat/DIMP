@@ -166,7 +166,7 @@ DIMP 的账号（ID）是一个格式为 ```name@address``` 的字符串（termi
 
 其中第3条是由算法本身决定的，第1条和第2条则是出于通用性的考虑所做的建议性限制，各客户端也可以酌情考虑允许用户输入其他语言文字（不过本人认为没有这个必要，建议客户端需要显示的包含其他语言的用户名字信息以 profile 方式提供）。
 
-```
+```javascript
 // 举例
 name = "Albert.Moky";
 ```
@@ -180,7 +180,7 @@ DIMP 的账号地址由 Meta 算法生成，过程如下：
 meta.version     = 0x01;
 meta.seed        = "moky";
 meta.key         = PK;
-meta.fingerprint = sign(meta.seed, SK); // 具体算法由公钥 meta.key 参数定义
+meta.fingerprint = sign(meta.seed, SK); // 具体算法细节见 meta.key 参数
 
 // 2. 对指纹信息进行组合哈希运算（sha256 + ripemd160）得到指纹摘要 digest
 // 3. 将 Network ID 与指纹摘要 digest 拼接后再双哈希（sha256 + sha256）
@@ -258,6 +258,7 @@ meta.fingerprint = sign(meta.seed, founder.SK);
 ID.name    = meta.seed;
 ID.address = btcBuildAddress(meta.fingerprint, MKMNetwork_Polylogue);
 ```
+
 然后将群 ID 发给初始成员。每位成员收到后，在本地保存为一个**临时会话**记录。
 后续所有通讯都必须在 message.content.group 中夹带群 ID，以便接收方知道这是一个群消息。
 
@@ -484,6 +485,7 @@ key    = encrypt(PW, receiver.PK); // 4. 对随机密码进行非对称加密
 签名算法如下：
 
 ```javascript
+// 具体算法细节由 meta.key 定义
 signature = sign(data, sender.SK);
 ```
 
@@ -557,7 +559,7 @@ signature = sign(data, sender.SK);
 
 **群信息包**格式如下：
 
-```
+```javascript
 {
     sender   : "SENDER_ID",
     receiver : "GROUP_ID",
@@ -601,7 +603,7 @@ signature = sign(data, sender.SK);
     },
     
     meta     : {
-        // 跟用户 ID 对应的 meta 信息
+        // 与 sender ID 对应的 meta 信息（无需加密）
         // 如果是新用户，station 会在校验正确后保存此信息
         // 如果 station 已保存过该信息，则忽略之
     }
@@ -755,6 +757,7 @@ signature = sign(data, sender.SK);
         broadcast : {
             // 内容同上
         },
+        
         traces    : [
             // 内容同上
         ]

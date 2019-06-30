@@ -44,10 +44,15 @@ Copyright &copy; 2018 Albert Moky
         - [原始信息包（Instant Message）](#instant-message)
         - [加密信息包（Secure Message）](#secure-message)
         - [网络传输包（Reliable Message）](#reliable-message)
+    - [通讯密钥](#message-key)
+	    - [对称密钥](#symmetric-key)
+	    - [非对称密钥](#asymmetric-key)
 - [消息处理流程](#message-process)
     - [二人私聊](#personal-message)
     - [多人群聊](#group-message)
 - [扩展协议](#extensions)
+    - [广播消息通讯协议](#broadcast-message)
+    - [用户资料广播协议](#profile)
     - [握手协议（登录验证）](#handshake)
     - [登录点信息广播协议](#broadcast)
     - [信息包确认签收协议](#receipt)
@@ -518,6 +523,26 @@ signature = sign(data, sender.SK);
 }
 ```
 
+### <span id="message-key">通讯密钥
+端对端加密通讯消息需要用到对称与非对称两层密钥。
+
+- <span id="symmetric-key">**对称密钥**</span>
+
+1. 对称密钥为消息发送方随机生成的密钥，用于对消息主体（content）进行加/解密；
+2. 对称密钥有方向属性，即每一个**&lt;FROM, TO&gt;向量**对应一个密钥，其中 **FROM** 即发送方（sender）地址，**TO** 为接收方（receiver or group）地址；
+3. 在一个由 N 个人组成的群聊天中，每一个成员分别维护一把 **&lt;memberID, groupID&gt;** 的密钥，即一共存在 N 个对称密钥；
+4. 对称密钥可以重用（建议每4小时更换一次），由消息发送方负责维护；
+5. 默认算法：“**AES/CBC/PKCS7Padding**”。
+
+- <span id="asymmetric-key">**非对称密钥**</span>
+
+1. 非对称密钥为每个用户自己生成的密钥对，用于对非对称密钥进行加/解密，默认是用户注册时生成的 meta.key 及其对应的 private key；
+2. 每个消息发送方必须先取得接收方的公钥（默认是 meta.key），然后用它为**对称密钥(&lt;senderID, receiverID&gt;)**加密，并将加密结果附在 ReliableMessage 的 key 中发送给接收方；
+3. 在一个由 N 个人组成的群聊天中，发送方需要用每一个群成员的公钥为**对称密钥(&lt;senderID, groupID&gt;)**进行加密，并将加密结果附在 ReliableMessage 的 keys 中发送给每一个接收方；
+4. 由于对称密钥支持重用，所以在对称密钥不变的情况下，以上两步加密操作可以省略，接收方在信息中没有找到 key/keys 字段时，应从之前的信息中获取相应的密码进行解密；
+5. 默认算法："**RSA/ECB/PKCS1Padding**"；
+6. 通讯密钥可以更换，具体逻辑参见 [扩展协议::Profile](#profile)。
+
 ## <span id="message-process">消息处理流程</span>
 
 ### <span id="personal-message">二人私聊</span>
@@ -583,9 +608,99 @@ signature = sign(data, sender.SK);
 
 ## 6. <span id="extensions">扩展协议</span>
 
-以下子协议非 DIMP 核心，但在实际应用中仍然十分重要，所以放在 DIMP Extensions 里。
+以下子协议非 DIMP 核心，但在实际应用中仍然十分重要。
 
-### 6.1. <span id="handshake">握手协议（登录验证）</span>
+### 6.1. <span id="broadcast-message">广播消息通讯协议</span>
+
+与普通的[网络传输包(Reliable Message)](#reliable-message)类似，广播消息包(Broadcast Message)也可以在网络中传播。不同点主要有两个：
+
+1. 广播消息只有发送方，没有接收方，所以每个节点都会收到此类消息；
+2. 广播消息只有签名信息，没有解密密钥，因为内容是明文的。
+
+格式如下：
+
+1. sender - 发送方 ID
+2. time - 发送时间
+3. subject - 广播主题（对广播内容进行分类）
+4. data - 明文广播信息
+5. signature - 签名信息
+6. traces - 广播路径记录，作为广播信息的附件一起发送
+
+```javascript
+/* 广播消息 */
+{
+    sender  : "USER_ID",
+    time    : 1502119527,
+    subject : "broadcast",     // broadcast title
+    
+    data      : "JSON_ENCODE",   // json_encode(content);
+    signature : "BASE64_ENCODE", // sign(data, user.SK);
+    
+    traces    : [
+        { /* 途经的每个 station 信息（含到达时间） */ },
+    ]
+}
+```
+
+### 6.2. <span id="profile">用户资料广播协议</span>
+
+由于 meta 信息的不可变性，为了降低“历史攻击”的风险（攻击者一直存储特定用户的网络传输包，等待某天成功窃取到该用户私钥后再解密的一种攻击方式），需要扩展一个协议来支持通讯密钥和 meta.key 分离。
+
+另外用户的其他资料（如昵称、头像等）也需要一套协议来同步信息，所以特此提出该协议。Profile 信息结构如下：
+
+1. ID - Entity(user/group) ID
+2. data - 用户资料信息（序列化后）
+3. signature - 对 data 的签名
+
+```javascript
+/* 用户资料信息 */
+info = {
+    // 通讯密钥
+    key : {
+        algorithm: "RSA",
+        data     : "..."
+    },
+    
+    // 其他信息
+    name   : "moky",
+    avatar : "https://",
+    // ...
+}
+
+/* 资料更新命令 */
+content = {
+    type    : 0x88, // DIMContentType_Command
+    sn      : 1234,
+    command : "profile",
+    
+    profile : {
+        ID        : "USER_ID",
+        /**
+         *    1. 先将 info 转换为 JsON 字符串 data
+         *    2. 再对 data 进行签名
+         */
+        data      : "JSON_ENCODE",  // json_encode(info);
+        signature : "BASE64_ENCODE" // sign(data, user.SK);
+    }
+}
+```
+
+当用户资料（包括通讯密钥）需要更新时，将此信息用广播消息发送出去：
+
+```javascript
+/* 资料更新广播消息 */
+{
+    sender  : "USER_ID",
+    time    : 1502119527,
+    subject : "profile",
+    
+    data      : "JSON_ENCODE",   // json_encode(content)
+    signature : "BASE64_ENCODE", // sign(data, user.SK);
+    traces    : []
+}
+```
+
+### 6.3. <span id="handshake">握手协议（登录验证）</span>
 
 为了确认用户身份，以便正确的投递信息包（虽然投递到错误地址也不会造成信息泄密，但是可能会导致真正的接收方丢失信息），Station 应该在收到客户端的连接请求时确认对方身份是否合法。因此基于 DIMP 扩展出此协议。
 
@@ -685,89 +800,55 @@ signature = sign(data, sender.SK);
 /* 同样需要加密+签名 */
 ```
 
-### 6.2. <span id="broadcast">登录点信息广播协议</span>
+### 6.4. <span id="broadcast">登录点信息广播协议</span>
 
 特别地，随着用户量增加，DIM 网络中的 Station 也会越来越多，为了更快捷高效地转发信息，需要增加一个子协议以协助 DIM 网络计算最短传输路径（即**路由算法**）。因此这里提出一个扩展建议：
 
-1. 在上面的握手协议基础之上，额外扩展一个包含当前连接的 Station 信息的数据结构（含签名），给到 Station；
+1. 扩展一个包含当前连接的 Station 信息的数据结构（含签名），给到 Station；
 2. Station 在收到此信息包并验证+去重后，更新本地数据库并向全网广播此数据结构；
 3. 每一个 Station 在收到此数据结构时，将自身信息加入到该结构所附带的传播路径（traces）并转发给其余已建立连接的 Station。
 
-登录信息包数据格式如下（在第3次握手协议基础上扩展）：
+信息结构如下：
 
 ```javascript
-{
-    sender   : "USER_ID"
-    receiver : "STATION_ID"
-    time     : 1542157677,
+/* 登录命令 */
+content = {
+    type    : 0x88, // DIMMessageType_Command
+    sn      : 1234,
+    command : "login",
     
-    content  : {
-        type    : 0x88, // DIMMessageType_Command
-        sn      : 3456,
-        command : "handshake",
-        message : "Hello world!", // It's me!
-        session : "RANDOM_STRING", // 由 Station 生成的随机字符串
+    login   : {
+        // 当前登录的基站(节点)信息
+        provider : "SP_ID",
+        station  : "STATION_ID",
+        host     : "211.66.6.1",
+        port     : 9394,
+        time     : 1542157677,  // 登录时间
         
-        // 被全网广播的数据结构
-        broadcast : {
-            /**
-             *  登录信息
-             */
-            login     : {
-                // 当前登录的基站(节点)信息
-                station   : "STATION_ID",
-                host      : "211.66.6.1",
-                port      : 9394,
-                time      : 1542157677,  // 登录时间
-                // 终端(客户端)信息
-                account   : "USER_ID",
-                terminal  : "DEVICE_ID", // 终端标识（可选）
-                userAgent : "USER_AGENT" // 其他信息
-            },
-            
-            /**
-             *  用户签名
-             *    1. 先将 login 转换为 JsON 字符串（替换）
-             *    2. 再对 login（字符串数据）进行签名
-             */
-            signature : "BASE64_ENCODE" // sign(json(login), user.SK);
-        },
-        
-        // 广播路径记录，作为广播信息的附件一起发送
-        traces    : [
-            { /* 广播途径的每一个节点信息（格式如上，含转发时间） */ },
-        ]
+        // 终端(客户端)信息
+        account   : "USER_ID",
+        terminal  : "DEVICE_ID", // 终端标识（可选）
+        userAgent : "USER_AGENT" // 其他信息（可选）
     }
 }
 ```
 
-也可以作为**广播子协议**单独使用：
+然后将登录命令用广播消息发送出去：
 
 ```javascript
+/* 登录广播消息 */
 {
-    sender   : "USER_ID"
-    receiver : "STATION_ID"
-    time     : 1542157677,
+    sender  : "USER_ID",
+    time    : 1542157677,
+    subject : "login",
     
-    content  : {
-        type    : 0x88, // DIMMessageType_Command
-        sn      : 5678,
-        command : "broadcast",
-        
-        // 全网广播信息
-        broadcast : {
-            // 内容同上
-        },
-        
-        // 广播路径记录
-        traces    : [
-            // 内容同上
-        ]
-    }
+    data      : "JSON_ENCODE",   // json_encode(content)
+    signature : "BASE64_ENCODE", // sign(data, user.SK);
+    traces    : []               // 广播路径记录，作为广播信息的附件一起发送
 }
 ```
 
-### 6.3. <span id="receipt">信息包确认签收协议</span>
+### 6.5. <span id="receipt">信息包确认签收协议</span>
 
 为追踪用户信息包到达情况，可扩展**信息签收**子协议。
 
@@ -782,24 +863,27 @@ signature = sign(data, sender.SK);
         sn      : 1234, // 原始消息的 sn
         group   : "[GROUP_ID]", // 如果是群消息收据，则须带上群 ID
         
-        command : "receipt"
+        command : "receipt",
+        message : "...",
+        // extra info
+        // ...
     }
 }
 ```
 
-### 6.4. <span id="white-list">白名单</span>
+### 6.6. <span id="white-list">白名单</span>
 
 由 Station 提供的增值服务。
 
 客户端成功与某 Station 建立连接后，可以选择是否将自己的通讯录列表作为**白名单**提交给该 Station，如果这样做，则可享受其提供的**自动过滤垃圾信息服务**：在此期间，Station 将自动丢弃所有发送者 ID 不在白名单中的消息（群消息除外）。
 
-### 6.5. <span id="black-list">黑名单</span>
+### 6.7. <span id="black-list">黑名单</span>
 
 遇到骚扰账号时，可以将其 ID 加入到本地的黑名单列表，则所有发送者 ID 在黑名单中的消息将不会被显示（客户端自动屏蔽）；
 
 同时，当客户端成功与可以提供**自动屏蔽骚扰信息服务**的 Station 建立连接后，可以选择是否将本地的黑名单提交给该 Station，如果这样做，则 Station 将会自动丢弃所有发送者 ID 在黑名单中的消息（群消息除外）。
 
-### 6.6. <span id="ant-porter">蚂蚁搬运工</span>
+### 6.8. <span id="ant-porter">蚂蚁搬运工</span>
 
 由 Service Provider 提供的增值服务。
 

@@ -1,4 +1,4 @@
-# DIMP（去中心化即时通讯协议）技术白皮书 (V0.1)
+# DIMP（去中心化即时通讯协议）技术白皮书 (V0.2)
 
 草案：**2018年11月11日** (@moky)
 
@@ -44,9 +44,11 @@ Copyright &copy; 2018 Albert Moky
         - [原始信息包（Instant Message）](#instant-message)
         - [加密信息包（Secure Message）](#secure-message)
         - [网络传输包（Reliable Message）](#reliable-message)
+- [密码](#cryptography)
+    - [身份密钥](#meta-key)
     - [通讯密钥](#message-key)
-	    - [对称密钥](#symmetric-key)
-	    - [非对称密钥](#asymmetric-key)
+        - [对称密钥](#symmetric-key)
+        - [非对称密钥](#asymmetric-key)
 - [消息处理流程](#message-process)
     - [二人私聊](#personal-message)
     - [多人群聊](#group-message)
@@ -523,7 +525,15 @@ signature = sign(data, sender.SK);
 }
 ```
 
-### <span id="message-key">通讯密钥
+## 6. <span id="cryptography">密码</span>
+
+### 6.1. <span id="meta-key">身份密钥</span>
+
+用户身份由非对称密码学验证确认。
+
+用户在客户端生成个人私钥，然后用私钥构建 meta 信息以及生成 ID，此后所有需要身份验证的地方都由 meta.key 进行验证。
+
+### 6.2. <span id="message-key">通讯密钥</span>
 端对端加密通讯消息需要用到对称与非对称两层密钥。
 
 - <span id="symmetric-key">**对称密钥**</span>
@@ -543,9 +553,9 @@ signature = sign(data, sender.SK);
 5. 默认算法："**RSA/ECB/PKCS1Padding**"；
 6. 通讯密钥可以更换，具体逻辑参见 [扩展协议::Profile](#profile)。
 
-## <span id="message-process">消息处理流程</span>
+## 7. <span id="message-process">消息处理流程</span>
 
-### <span id="personal-message">二人私聊</span>
+### 7.1. <span id="personal-message">二人私聊</span>
 
 当一个用户需要发送信息给另一个用户时，客户端需要先执行以下3个步骤，再将计算结果打包发送到 DIM 网络中：
 
@@ -561,7 +571,7 @@ signature = sign(data, sender.SK);
 
 通过以上算法，既能确保信息不被任何中间节点监听窃取，也能防止第三方冒充篡改，从而实现安全可靠的去中心化通讯。
 
-### <span id="group-message">多人群聊</span>
+### 7.2. <span id="group-message">多人群聊</span>
 
 在多人群聊场景中，可以基于上述的“二人私聊”逻辑来实现，具体根据实现复杂度可以有多种实现方式。其中最简单的是由客户端负责分包，这种方式实现逻辑最简单，私密性最好，对网络依赖性最低，但同时对带宽消耗也最大：
 
@@ -599,18 +609,18 @@ signature = sign(data, sender.SK);
 
 当客户端确认当前连接的服务端支持 PW 重用时，可以在后续信息包中省略掉 keys 字段，进一步减少上行带宽的使用。
 
-### 优化功能点
+### 7.3. 优化功能点
 
 1. **【密钥重用】** 为了节省流量与算力，PW 应该允许复用，即在一定时间间隔内（比如24小时）发消息时无需再生成新的 PW（也无需再把该 PW 打包成 key），客户端应保存每一个“**消息方向**”所对应的历史 PW。当接收到的新消息中找不到对应的 key 时，应该根据该“消息方向”从历史记录中寻找复用 PW；
 2. **【密钥查询】** 考虑到可能丢失信息包（或者信息包顺序错乱）的情况，在升级优化功能点1的同时，需要支持查询 PW 的功能，以便接收方在无法找到有效的 PW 时，可以向消息发送方请求获取 PW，或者直接要求对方重发该信息（带上 key 字段）；
 3. **【消息压缩】** 为了节省数据流量，在发送较长信息时，可以考虑先压缩再加密（压缩/解压需要额外消耗算力），要实现此功能只需要**扩展对称密钥算法**即可（比如 algorithm 由 "AES" 升级为支持 "AES+ZIP"，压缩参数也可以写进 key 字典），前提是接收方也需要支持相同的对称算法。
 4. **【消息免签】** 对于已经通过握手等方式建立信任关系的收发双方，可以共同约定一个 **session key**（加有效期），此后每条消息都将该字符串放进 ```message.content['session']``` 中再加密；接收方解密后验证其是否有效即可。此功能可有效减少流量与算力的消耗，缺点是仅能用于点对点聊天，不适宜用于群聊，并且需要 station 支持“免签过境”特权（除非不经过任何 station 直接建立连接）。
 
-## 6. <span id="extensions">扩展协议</span>
+## 8. <span id="extensions">扩展协议</span>
 
 以下子协议非 DIMP 核心，但在实际应用中仍然十分重要。
 
-### 6.1. <span id="broadcast-message">广播消息通讯协议</span>
+### 8.1. <span id="broadcast-message">广播消息通讯协议</span>
 
 与普通的[网络传输包(Reliable Message)](#reliable-message)类似，广播消息包(Broadcast Message)也可以在网络中传播。不同点主要有两个：
 
@@ -642,7 +652,7 @@ signature = sign(data, sender.SK);
 }
 ```
 
-### 6.2. <span id="profile">用户资料广播协议</span>
+### 8.2. <span id="profile">用户资料广播协议</span>
 
 由于 meta 信息的不可变性，为了降低“历史攻击”的风险（攻击者一直存储特定用户的网络传输包，等待某天成功窃取到该用户私钥后再解密的一种攻击方式），需要扩展一个协议来支持通讯密钥和 meta.key 分离。
 
@@ -700,7 +710,7 @@ content = {
 }
 ```
 
-### 6.3. <span id="handshake">握手协议（登录验证）</span>
+### 8.3. <span id="handshake">握手协议（登录验证）</span>
 
 为了确认用户身份，以便正确的投递信息包（虽然投递到错误地址也不会造成信息泄密，但是可能会导致真正的接收方丢失信息），Station 应该在收到客户端的连接请求时确认对方身份是否合法。因此基于 DIMP 扩展出此协议。
 
@@ -800,7 +810,7 @@ content = {
 /* 同样需要加密+签名 */
 ```
 
-### 6.4. <span id="broadcast">登录点信息广播协议</span>
+### 8.4. <span id="broadcast">登录点信息广播协议</span>
 
 特别地，随着用户量增加，DIM 网络中的 Station 也会越来越多，为了更快捷高效地转发信息，需要增加一个子协议以协助 DIM 网络计算最短传输路径（即**路由算法**）。因此这里提出一个扩展建议：
 
@@ -848,7 +858,7 @@ content = {
 }
 ```
 
-### 6.5. <span id="receipt">信息包确认签收协议</span>
+### 8.5. <span id="receipt">信息包确认签收协议</span>
 
 为追踪用户信息包到达情况，可扩展**信息签收**子协议。
 
@@ -871,19 +881,19 @@ content = {
 }
 ```
 
-### 6.6. <span id="white-list">白名单</span>
+### 8.6. <span id="white-list">白名单</span>
 
 由 Station 提供的增值服务。
 
 客户端成功与某 Station 建立连接后，可以选择是否将自己的通讯录列表作为**白名单**提交给该 Station，如果这样做，则可享受其提供的**自动过滤垃圾信息服务**：在此期间，Station 将自动丢弃所有发送者 ID 不在白名单中的消息（群消息除外）。
 
-### 6.7. <span id="black-list">黑名单</span>
+### 8.7. <span id="black-list">黑名单</span>
 
 遇到骚扰账号时，可以将其 ID 加入到本地的黑名单列表，则所有发送者 ID 在黑名单中的消息将不会被显示（客户端自动屏蔽）；
 
 同时，当客户端成功与可以提供**自动屏蔽骚扰信息服务**的 Station 建立连接后，可以选择是否将本地的黑名单提交给该 Station，如果这样做，则 Station 将会自动丢弃所有发送者 ID 在黑名单中的消息（群消息除外）。
 
-### 6.8. <span id="ant-porter">蚂蚁搬运工</span>
+### 8.8. <span id="ant-porter">蚂蚁搬运工</span>
 
 由 Service Provider 提供的增值服务。
 
@@ -893,5 +903,5 @@ content = {
 
 该服务对于有**跨国沟通**需求的用户尤其重要，相信可以极大地提高用户体验。
 
-## 7. <span id="conclusion">结论</span>
+## 9. <span id="conclusion">结论</span>
 祝帝企鹅20周岁生日快乐！🎂

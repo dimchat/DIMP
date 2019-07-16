@@ -624,14 +624,14 @@ signature = sign(data, sender.SK);
 
 与普通的[网络传输包(Reliable Message)](#reliable-message)类似，广播消息包(Broadcast Message)也可以在网络中传播。不同点主要有两个：
 
-1. 广播消息只有 sender，没有 receiver（实际```receiver = "EVERYONE@EVERYWHERE"```），所以每个节点都会收到；
+1. 广播消息只有 sender，没有 receiver（实际```receiver = "everyone@everywhere"```），所以每个节点都会收到；
 2. 广播消息只有签名信息，没有解密密钥，因为内容是明文的（直接将 content 序列化）。
 
 格式如下：
 
 1. sender - 发送方 ID
 2. time - 发送时间
-3. receiver - 恒等于 "EVERYONE@EVERYWHERE"
+3. receiver - 恒等于 "everyone@everywhere"
 4. data - 明文广播信息
 5. signature - 签名信息
 6. traces - 广播路径记录，作为广播信息的附件一起发送
@@ -640,10 +640,10 @@ signature = sign(data, sender.SK);
 /* 广播消息 */
 {
     sender    : "USER_ID",
-    receiver  : "EVERYONE@EVERYWHERE", // constant
+    receiver  : "everyone@everywhere", // constant
     time      : 1502119527,
     
-    data      : "BASE64_ENCODE",       // json_encode(content);
+    data      : "PLAIN_TEXT",          // json_encode(content);
     signature : "BASE64_ENCODE",       // sign(data, user.SK);
     
     traces    : [
@@ -689,7 +689,7 @@ content = {
          *    1. 先将 info 转换为 JsON 字符串 data
          *    2. 再对 data 进行签名
          */
-        data      : "JSON_ENCODE",  // json_encode(info);
+        data      : "PLAIN_TEXT",   // json_encode(info);
         signature : "BASE64_ENCODE" // sign(data, user.SK);
     }
 }
@@ -701,10 +701,10 @@ content = {
 /* 资料更新广播消息 */
 {
     sender    : "USER_ID",
-    receiver  : "EVERYONE@EVERYWHERE", // constant
+    receiver  : "everyone@everywhere", // constant
     time      : 1502119527,
     
-    data      : "BASE64_ENCODE",       // json_encode(content)
+    data      : "PLAIN_TEXT",          // json_encode(content)
     signature : "BASE64_ENCODE",       // sign(data, user.SK);
     traces    : []
 }
@@ -849,10 +849,10 @@ content = {
 /* 登录广播消息 */
 {
     sender    : "USER_ID",
-    receiver  : "EVERYONE@EVERYWHERE", // constant
+    receiver  : "everyone@everywhere", // constant
     time      : 1542157677,
     
-    data      : "BASE64_ENCODE",       // json_encode(content)
+    data      : "PLAIN_TEXT",          // json_encode(content)
     signature : "BASE64_ENCODE",       // sign(data, user.SK);
     traces    : []                     // 广播路径记录，作为广播信息的附件一起发送
 }

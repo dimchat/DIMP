@@ -9,18 +9,11 @@ and an architecture for developing decentralized IM applications. The software
 provides accounts (user identity recognition) and communications (IM) between 
 accounts safely by end-to-end encryption.
 
-Copyright &copy; 2018 Albert Moky
-
 
 Translations
 ------------
 
 * `Simplified Chinese <https://dim-cn.readthedocs.io>`_ 
-
-Contents
-========
-
-:ref:`Keyword Index <genindex>`, :ref:`Search Page <search>`
 
 .. toctree::
    :maxdepth: 2

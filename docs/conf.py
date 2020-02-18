@@ -19,7 +19,7 @@
 
 project = 'DIM Protocol'
 copyright = '2018-2020, DIM Foundation'
-author = 'DIM Foundation'
+author = 'Albert Moky'
 
 # The full version, including alpha/beta/rc tags
 release = 'latest'

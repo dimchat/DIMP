@@ -1,7 +1,5 @@
-DIMP Technical White Paper (V0.1)
-=================================
-
-**November 11 2018**
+DIM Protocol
+============
 
 This document introduces a new protocol designed for instant messaging (IM) 
 and an architecture for developing decentralized IM applications. The software 
@@ -14,8 +12,14 @@ Translations
 
 * `Simplified Chinese <https://dim-cn.readthedocs.io>`_ 
 
+
+Contents
+--------
+
 .. toctree::
    :maxdepth: 2
 
+   TechnicalWhitePaper.md
+   MingKeMing-Identity.md
    DaoKeDao-Message.md
 
